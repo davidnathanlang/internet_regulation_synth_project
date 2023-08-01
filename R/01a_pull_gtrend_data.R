@@ -20,11 +20,11 @@ search_terms <- c(
   "vpn",
   "torrent",
   "proxy",
-  "jailbreak",
+ # "jailbreak",
   "tiktok"
 )
                   
-end_date <- '2023-06-21'
+end_date <- '2023-07-07'
 
 time_spans <- c(
   str_glue("2023-01-01 {end_date}"),
@@ -50,13 +50,33 @@ gtrends_call <- function(term = "VPN",
   } else {
     print(str_glue("{term}_{state}_{time_span}"))
     
-    my_trend <-
-      gtrends(term,
-              str_c("US-", state),
-              time = time_span,
-              onlyInterest = TRUE)
+    retries <- 5
+    while(retries > 0){
+      tryCatch({
+        my_trend <-
+          gtrends(term,
+                  str_c("US-", state),
+                  time = time_span,
+                  onlyInterest = TRUE)
+        retries <- 0  # if no error, we exit the loop
+      },
+      error = function(e){
+        if(e$message == 'Status code was not 200. Returned status code:429'){
+          print(e$message)
+          print("Sleeping for at least an hour")
+          Sys.sleep(sample(3600:7200, 1))  # sleep for 1-2 hours
+          print(e$message)
+          retries <- retries - 1  # decrement retry count
+          print("Retries Remaining")
+          print(retries)
+          
+        }else{
+          stop(e)  # if error is not 429, we stop the execution
+        }
+      })
+    }
     
-    Sys.sleep(7) # necessary to keep the API happy
+    Sys.sleep(runif(1,30,120)) # necessary to keep the API happy
     
     if (is.null(my_trend$interest_over_time)) {
       return("Data Not Found")
@@ -74,4 +94,3 @@ gtrends_call <- function(term = "VPN",
 
 pmap(parameter_tibble,  ~gtrends_call(..1, ..2, ..3))
 
- 
