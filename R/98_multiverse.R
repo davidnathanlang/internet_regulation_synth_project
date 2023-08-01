@@ -90,205 +90,212 @@ multiverse_spec <-
 
 # define function for multiverse of models ------------------------------------
 
-multiverse_run <- function(model_num,
-                           method,
-                           as_fixedeff,
-                           gs_estimator,
-                           treated_state,
-                           states_to_include,
-                           pretreat_start,
-                           post_stop,
-                           covariates,
-                           outcome,
-                           data,
-                           output = "output-multiverse",
-                           verbose = F) {
-
-  if(verbose) {
-    print(paste("model_num:", model_num))
-    print(paste("method:", method))
-    print(paste("method_opts:", as_fixedeff))
-    print(paste("states_to_include, count:", length(states_to_include)))
-    print(paste("pretreat_start:", pretreat_start))
-    print(paste("post_stop:", post_stop))
-    print(paste("covariates:", covariates))
-    print(paste("outcome:", outcome))
-    print("--------------------------")
+multiverse_run <- function(method,
+                       as_fixedeff,
+                       pretreat_start,
+                       post_stop,
+                       covariates,
+                       outcome,
+                       data = full_df,
+                       estimator){
+  
+  in_function_data <- data %>%   
+    filter(term == outcome) %>% # Vary this
+    filter(date >= pretreat_start) %>%  # Vary this
+    filter(date <= post_stop) # Vary this
+  
+  no_cov_formula = as.formula(hits ~ post_treat)
+  
+  cov_formula = as.formula(hits ~ post_treat +high_school_or_ged+bachelors_plus+male+household_income+white+black+amerindian+asian+native_hawaiian+two_or_more_races)
+  
+  in_function_data = in_function_data %>% select(post_treat, hits, state, date, high_school_or_ged, bachelors_plus, male, household_income, white, black, amerindian, asian, native_hawaiian, two_or_more_races)
+  
+  if(method == "multisynth"){
+    
+    mulisynth_return_object = list()
+    
+    if(covariates == T){
+      
+      multisynth_out = multisynth(form = cov_formula, # Vary this
+                                  unit = state, 
+                                  time = date, 
+                                  data = in_function_data,
+                                  fixedeff = as_fixedeff, # Vary this
+                                  scm = T)
+    }
+    
+    if(covariates == F){
+      multisynth_out = multisynth(form = no_cov_formula, # Vary this
+                                  unit = state, 
+                                  time = date, 
+                                  data = in_function_data,
+                                  fixedeff = as_fixedeff, # Vary this
+                                  scm = T)
+    }
+    
+    mulisynth_return_object$multisynth_out = multisynth_out
+    
+    multisynth_summary_wild = summary(multisynth_out, inf_type = 'bootstrap') # wild bootstrap
+    
+    mulisynth_return_object$multisynth_summary_wild = multisynth_summary_wild
+    
+    multisynth_summary_jk = summary(multisynth_out, inf_type = 'jackknife') # jackknife boostrap
+    
+    mulisynth_return_object$multisynth_summary_jk = multisynth_summary_jk
+    
+    # "y0hat"Pilot estimates of control outcomes
+    multisynth_summary_jk$y0hat
+    
+    convert_yhat = function(y0hat){
+      
+      treatment_times = names(multisynth_out$y0hat)
+      
+      df = multisynth_out$y0hat %>% 
+        lapply(., t) %>% 
+        lapply(., data.frame) %>% 
+        lapply(., tibble::rownames_to_column, var = "time") %>% 
+        lapply(., function(x) mutate(x, time = as.numeric(time)))
+      
+      for(i in 1:length(df)){
+        df[[i]]$treatment_time = as.numeric(treatment_times[[i]])
+        
+        df[[i]]$treated = ifelse(df[[i]]$time >= df[[i]]$treatment_time, 1, 0)
+        
+      }
+      
+      df = lapply(df, function(x) select(x, time, treatment_time, treated, everything()))
+      
+      return(df)
+      
+    }
+    
+    converted_yhat = convert_yhat(multisynth_out$y0hat)
+    
+    mulisynth_return_object$ranking_results = lapply(seq_along(converted_yhat),function(x){
+      
+      pre_mspe = converted_yhat[[x]] %>% 
+        filter(treated <= 0) %>% 
+        select(contains("X")) %>% 
+        apply(., 2, function(x) mean(x^2))
+      
+      post_mspe = converted_yhat[[x]] %>% 
+        filter(treated > 0) %>% 
+        select(contains("X")) %>% 
+        apply(., 2, function(x) mean(x^2))
+      
+      average_diff = converted_yhat[[x]] %>% 
+        select(contains("X")) %>% 
+        apply(., 2, mean)
+      
+      last_period_diff = converted_yhat[[x]] %>% 
+        # filter(treated > 0) %>% 
+        select(contains("X")) %>% 
+        apply(., 2, max)
+      
+      return(
+        cbind(pre_mspe, post_mspe, average_diff, last_period_diff)
+      )
+      
+    }) %>% 
+      lapply(., data.frame) %>% 
+      bind_rows() %>% 
+      rownames_to_column(.,'state') %>% 
+      mutate(state = rep(multisynth_out$data$units, 6)) %>% 
+      group_by(state) %>% 
+      summarize(pre_mspe = mean(pre_mspe), 
+                post_mspe = mean(post_mspe),
+                average_diff = mean(average_diff),
+                last_period_diff = mean(last_period_diff))
+    
+    return(mulisynth_return_object)
+    
   }
-
-  # Treatment window and data collapse to week
-  data <- data %>% filter(
-    date >= !!pretreat_start,
-    date <= !!post_stop,
-    state %in% !!states_to_include
-  )
-
-  data$outcome = data[[outcome]]
-
-  if(method == "multisynth") {
-    # Covariate inclusion
-    formula = paste0(paste0(outcome, collapse = "+"), " ~ treat")
-    if(covariates[[1]] != "NULL") {
-      formula = paste(formula, paste0(covariates, collapse = " + "), sep = "|")
-    }
-
-    # Permute the multisynth
-    names(states_to_include) <- states_to_include
-    wrap_multisynth <- function(permuted_state) {
-      data <- data %>%
-        mutate(treat = state == !!permuted_state & relative_time >= 0)
-
-      multisynth(as.formula(formula),
-                 # Fixed params
-                 unit = state, time = relative_time, data = data,
-                 t_int = 0,
-                 # variable params
-                 fixedeff = as_fixedeff,
-                 scm = T)
-    }
-
-    multisynth_out <- states_to_include %>%
-      map(quietly(wrap_multisynth))
-
-    # multisynth_out structured as:
-    # state, type, pre_mspe, post_mspe, mspe_ratio, mspe_rank,
-    # fischers_exact_pvalue, z_score, average_difference, average_rank,
-    # last_period_diff, last_period_rank, weight
-
-    weights_ <- lapply(multisynth_out, `[[`, 1) %>%
-      lapply(., function(x) x$weights) %>%
-      lapply(., data.frame) %>%
-      lapply(., rownames_to_column, "state") %>%
-      purrr::reduce(., dplyr::left_join, by = 'state') %>%
-      `colnames<-`(c("state", paste(unlist(data_params$states_to_include), "weight", sep = "-"))) %>%
-      select(state, contains(treated_state)) # only care about true treated state weights
-
-    as_sum <- lapply(multisynth_out, `[[`, 1) %>%
-      map(summary)
-
-    get_multisynth_metrics <- function(as_sum) {
-
-      pre_mspe = as_sum$att %>%
-        filter(Time < 0, Level != "Average") %>%
-        summarize(pre_mspe = mean(Estimate^2, na.rm = T))
-
-      post_mspe = as_sum$att %>%
-        filter(Time >= 0, Level != "Average") %>%
-        summarize(post_mspe = mean(Estimate^2, na.rm = T))
-
-      average_diff = as_sum$att %>%
-        filter(Time >= 0, Level != "Average") %>%
-        summarize(average_diff = mean(Estimate, na.rm = T))
-
-      last_period_diff = as_sum$att %>%
-        filter(Time == max(Time, na.rm = T), Level != "Average") %>%
-        select(last_period_diff = Estimate)
-
-      cbind(pre_mspe, post_mspe, average_diff, last_period_diff)
-    }
-
-    as_results <- as_sum %>%
-      lapply(., get_multisynth_metrics) %>%
-      bind_rows()
-
-    as_results$state = names(as_sum)
-
-    as_results <- as_results %>%
-      mutate(mspe_ratio = post_mspe/pre_mspe,
-             mspe_rank = rank(-mspe_ratio),
-             average_rank = rank(average_diff),
-             last_period_rank = rank(last_period_diff),
-             type = ifelse(state == !!treated_state, "Treated", "Donor"),
-             fishers_exact_pvalue = mspe_rank / n()) %>%
-      left_join(weights_, by = "state") %>%
-      mutate(model_num = model_num)
-
-    # write the full multisynth output to disk
-    saveRDS(multisynth_out, paste0(output, "/model_", model_num, ".rds"))
-    # function returns selected metrics in memory
-    return(as_results)
-  }
-
+  
   if(method == 'gsynth'){
-    # Covariate inclusion
-    formula = paste0(paste0(outcome, collapse = "+"), " ~ treat")
-    if(covariates[[1]] != "NULL") {
-      formula = paste(formula, paste0(covariates, collapse = " + "), sep = "+")
-    }
-
-    # Permute the multisynth
-    names(states_to_include) <- states_to_include
-    wrap_gsynth <- function(permuted_state) {
-      data <- data %>%
-        mutate(treat = state == !!permuted_state & relative_time >= 0)
-
-      gsynth(as.formula(formula),
-             # Fixed params
-             index = c("state", "relative_time"),
-             data = data,
-             t_int = 0,
-             # variable params
-             estimator = gs_estimator,
-             scm = T)
-    }
-
-    gsynth_out <- states_to_include %>%
-      map(quietly(wrap_gsynth))
-
-    weights_ <- gsynth_out %>%
-      lapply(., function(x) tibble::rownames_to_column(data.frame(x$wgt.implied), 'state')) %>%
-      select(contains(treated_state))
-
-    gs_sum <- lapply(gsynth_out, `[[`, 1)
-
-    get_multisynth_metrics <- function(gs_sum) {
-
-      eff = gs_sum$eff %>% data.frame()
-
-      pre_mspe = eff %>%
-        tibble::rownames_to_column('Time') %>%
-        filter(Time < 0) %>%
-        summarize(pre_mspe = mean(Estimate^2, na.rm = T))
-
-      post_mspe = as_sum$att %>%
+    permuting_gsynth = function(enforcement_date_, state_){
+      
+      if(est == "ife"){
+        data %>% 
+          mutate(post_treat = 0) %>% 
+          mutate(post_treat = ifelse(test = state_ == state & date > enforcement_date_, yes = 1, no = 0)) %>% 
+          gsynth(formula = hits ~ post_treat, data = ., index = c("state", "date"), # Vary this
+                 parallel = F, se = T, inference = "nonparametric", estimator = est) -> model_obj # Vary this
+      }
+      
+      if(est == "mc"){
+        data %>% 
+          mutate(post_treat = 0) %>% 
+          mutate(post_treat = ifelse(test = state_ == state & date > enforcement_date_, yes = 1, no = 0)) %>% 
+          gsynth(formula = hits ~ post_treat, data = ., index = c("state", "date"), # Vary this
+                 parallel = F, se = T, inference = "nonparametric", estimator = est) -> model_obj # Vary this
+      }
+      
+      out = tibble::rownames_to_column(data.frame(out$eff), var = "date")
+      
+      colnames(out)[2] = "eff"
+      
+      out$enforcement_date = enforcement_date_
+      
+      pre_mspe <- out %>% 
+        mutate(date = as.Date(as.numeric(date), origin="1970-1-1")) %>% 
+        mutate(Time = ifelse(enforcement_date <= date, 1, 0)) %>% 
+        filter(Time <= 0) %>% 
+        summarize(pre_mspe = mean(eff^2))
+      
+      post_mspe <- out %>% 
+        mutate(date = as.Date(as.numeric(date), origin="1970-1-1")) %>% 
+        mutate(Time = ifelse(enforcement_date <= date, 1, 0)) %>% 
+        filter(Time > 0) %>% 
+        summarize(post_mspe = mean(eff^2))
+      
+      average_diff = out %>%
+        mutate(date = as.Date(as.numeric(date), origin="1970-1-1")) %>% 
+        mutate(Time = ifelse(enforcement_date > date, 1, 0)) %>%
         filter(Time >= 0) %>%
-        summarize(post_mspe = mean(Estimate^2, na.rm = T))
-
-      average_diff = as_sum$att %>%
-        filter(Time >= 0) %>%
-        summarize(average_diff = mean(Estimate, na.rm = T))
-
-      last_period_diff = as_sum$att %>%
-        filter(Time == max(Time, na.rm = T)) %>%
-        select(last_period_diff = Estimate)
-
-      cbind(pre_mspe, post_mspe, average_diff, last_period_diff)
+        summarize(average_diff = mean(eff))
+      
+      last_period_diff = out %>%
+        mutate(date = as.Date(as.numeric(date), origin="1970-1-1")) %>% 
+        filter(date == max(date)) %>%
+        select(last_period_diff = eff)
+      
+      out_cbind = cbind(state_, enforcement_date_, pre_mspe, post_mspe, average_diff, last_period_diff)
+      
+      print(out_cbind)
+      
+      return(list(
+        gsynth_obj = model_obj, 
+        gsynth_result = out_cbind))
+      
     }
-
-    gs_results <- gs_sum %>%
-      lapply(., get_gsynth_metrics) %>%
-      bind_rows()
-
-    gs_results$state = names(gs_sum)
-
-    gs_results <- gs_results %>%
-      mutate(mspe_ratio = post_mspe/pre_mspe,
-             mspe_rank = rank(-mspe_ratio),
-             average_rank = rank(average_diff),
-             last_period_rank = rank(last_period_diff),
-             type = ifelse(state == !!treated_state, "Treated", "Donor"),
-             fishers_exact_pvalue = mspe_rank / n()) %>%
-      left_join(weights_, by = "state") %>%
-      mutate(model_num = model_num)
-
-    # write the full multisynth output to disk
-    saveRDS(multisynth_out, paste0(output, "/model_", model_num, ".rds"))
-    # function returns selected metrics in memory
-    return(as_results)
+    
+    gsynth_conds = expand.grid(
+      ed = unique(data$enforcement_date), 
+      s = unique(data$state), 
+      stringsAsFactors = F
+    ) %>% 
+      drop_na()
+    
+    permuted_gsynth_out = mapply(FUN = permuting_gsynth, gsynth_conds$ed, gsynth_conds$s, SIMPLIFY = F)
+    
+    
+    return(list(
+      
+      permuted_gsynth_out %>% 
+        lapply(., `[[`, 1),
+      
+      permuted_gsynth_out %>% 
+        lapply(., `[[`, 2) %>% 
+        bind_rows() %>% 
+        group_by(state_) %>% 
+        summarize(pre_mspe = mean(pre_mspe), 
+                  post_mspe = mean(post_mspe),
+                  average_diff = mean(average_diff),
+                  last_period_diff = mean(last_period_diff))))
+    
   }
-
+  
 }
-
 
 # Run Multiverse Models ---------------------------------------------------
 
@@ -300,13 +307,3 @@ multiverse_output <- multiverse_spec %>%
   future_pmap(., possibly(multiverse_run, otherwise = "error"), data = analysis_data,
               .options = furrr_options(seed = TRUE),
               .progress = T)
-
-names(multiverse_output) <- multiverse_spec$model_num
-
-# Note on output: weight column captures each state's weight in the OH (true)
-# synthetic control model. All other columns hold the specific states output from
-# the permutation test
-
-saveRDS(multiverse_output, "output-multiverse/multiverse_output.RDS")
-
-saveRDS(multiverse_spec, "output-multiverse/multiverse_spec.RDS")
