@@ -11,12 +11,15 @@ state_paths <- dir(here::here("data-raw"),full.names = TRUE) %>%
   keep(str_detect(.,pattern="csv"))
 
 implementation_dates <-
-  read_csv(here::here("data/implementation_dates.csv"))
+  read_csv(here::here("data/implementation_dates.csv")) %>% 
+  mutate(state = paste("US-",state,sep = ""))
 
 # Adjust for your computer
 plan(multisession, workers = availableCores()-1)
 
 df_all_raw <- future_map_dfr(state_paths, vroom) # vroom is a fast read csv
+
+df_all_raw <- rename(df_all_raw, "state" = geo)
 
 df_with_imp <- df_all_raw %>%
   tidylog::left_join(implementation_dates %>% select(enforcement_date, state),
@@ -34,6 +37,8 @@ df_with_imp <- df_all_raw %>%
 
 census <- read_csv(here::here("data/census_data.csv"))
 
+census$state = paste("US-",census$state, sep = "")
+
 full_df <- df_with_imp %>% 
   tidylog::inner_join(census)
 
@@ -44,5 +49,3 @@ full_df %>% saveRDS(here::here(str_glue("data/analysis_data_{Sys.Date()}.rds")))
 full_df %>%
   group_by(keyword) %>%
   group_walk(~ write_csv(.x, glue(here::here("data/{.y$keyword}.csv"))))
-
-
