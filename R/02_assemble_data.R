@@ -44,5 +44,5 @@ full_df %>% saveRDS(here::here(str_glue("data/analysis_data_{Sys.Date()}.rds")))
 full_df %>%
   group_by(keyword) %>%
   group_walk(~ write_csv(.x, glue(here::here("data/{.y$keyword}.csv"))))
-
+-
 

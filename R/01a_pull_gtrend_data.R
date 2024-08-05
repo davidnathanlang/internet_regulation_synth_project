@@ -11,11 +11,13 @@ states_vector <-
 
 
 search_terms <- c(
+#  "kink.com",
   "porn",
   "pornhub",
-  "redtube",
-  "youporn",
+ # "redtube",
+#  "youporn",
   "xvideos",
+<<<<<<< HEAD
   "tor",
   "vpn",
   "torrent",
@@ -25,6 +27,32 @@ search_terms <- c(
 )
                   
 end_date <- '2023-07-07'
+=======
+#  "tor",
+  "vpn"
+# "brazzers",
+# "justfor.fans",
+# "chaturbate",
+# "xhamster",
+# "xvideos",
+# "xnxx",
+# "bangbros",
+# "teamskeet",
+# "porndoe",
+# "letsdoeit",
+# "onlyfans",
+# "sextpanther",
+# "adameve",
+# "adultmoviemart",
+# "adameveplus"
+#  "torrent",
+#  "proxy",
+ # "jailbreak",
+#  "tiktok"
+)
+                  
+end_date <- '2024-07-31'
+
 
 time_spans <- c(
   str_glue("2023-01-01 {end_date}"),
@@ -64,7 +92,9 @@ gtrends_call <- function(term = "VPN",
         if(e$message == 'Status code was not 200. Returned status code:429'){
           print(e$message)
           print("Sleeping for at least an hour")
+
           Sys.sleep(sample(3600:7200, 1))  # sleep for 1-2 hours
+
           print(e$message)
           retries <- retries - 1  # decrement retry count
           print("Retries Remaining")
@@ -92,5 +122,5 @@ gtrends_call <- function(term = "VPN",
   } 
 }
 
-pmap(parameter_tibble,  ~gtrends_call(..1, ..2, ..3))
+pwalk(parameter_tibble,  ~gtrends_call(..1, ..2, ..3))
 
