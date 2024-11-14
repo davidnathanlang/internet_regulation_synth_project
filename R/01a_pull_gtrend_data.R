@@ -11,47 +11,44 @@ states_vector <-
 
 
 search_terms <- c(
-#  "kink.com",
+  #  "kink.com",
   "porn",
   "pornhub",
- # "redtube",
-#  "youporn",
+  # "redtube",
+  #  "youporn",
   "xvideos",
-<<<<<<< HEAD
-  "tor",
+  #  "tor",
+  #  "vpn",
+  #  "torrent",
+  #  "proxy",
+  # # "jailbreak",
+  # "tiktok",
+  #  "tor",
   "vpn",
-  "torrent",
-  "proxy",
- # "jailbreak",
-  "tiktok"
+  'wicked',
+  'wicked.com'
+  # "brazzers",
+  # "justfor.fans",
+  # "chaturbate",
+  # "xhamster",
+  # "xvideos",
+  # "xnxx",
+  # "bangbros",
+  # "teamskeet",
+  # "porndoe",
+  # "letsdoeit",
+  # "onlyfans",
+  # "sextpanther",
+  # "adameve",
+  # "adultmoviemart",
+  # "adameveplus"
+  #  "torrent",
+  #  "proxy",
+  # "jailbreak",
+  #  "tiktok"
 )
-                  
-end_date <- '2023-07-07'
-=======
-#  "tor",
-  "vpn"
-# "brazzers",
-# "justfor.fans",
-# "chaturbate",
-# "xhamster",
-# "xvideos",
-# "xnxx",
-# "bangbros",
-# "teamskeet",
-# "porndoe",
-# "letsdoeit",
-# "onlyfans",
-# "sextpanther",
-# "adameve",
-# "adultmoviemart",
-# "adameveplus"
-#  "torrent",
-#  "proxy",
- # "jailbreak",
-#  "tiktok"
-)
-                  
-end_date <- '2024-07-31'
+
+end_date <- '2024-10-31'
 
 
 time_spans <- c(
@@ -92,9 +89,9 @@ gtrends_call <- function(term = "VPN",
         if(e$message == 'Status code was not 200. Returned status code:429'){
           print(e$message)
           print("Sleeping for at least an hour")
-
+          
           Sys.sleep(sample(3600:7200, 1))  # sleep for 1-2 hours
-
+          
           print(e$message)
           retries <- retries - 1  # decrement retry count
           print("Retries Remaining")
