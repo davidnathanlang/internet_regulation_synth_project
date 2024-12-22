@@ -10,8 +10,9 @@ pacman::p_load(glue)
 state_paths <- dir(here::here("data-raw"),full.names = TRUE) %>% 
   keep(str_detect(.,pattern="csv"))
 
+
 implementation_dates <-
-  read_csv(here::here("data/implementation_dates.csv"))
+  read_csv(here::here("data/fsc_implementation_dates.csv")) %>% rename(state=Abbreviation,enforcement_date=LawEffectiveDate)
 
 # Adjust for your computer
 plan(multisession, workers = availableCores()-1)
@@ -37,12 +38,14 @@ census <- read_csv(here::here("data/census_data.csv"))
 full_df <- df_with_imp %>% 
   tidylog::inner_join(census)
 
+
 # Save the aggregated google trends data
 full_df %>% saveRDS(here::here(str_glue("data/analysis_data_{Sys.Date()}.rds")))
 
+full_df
 # Also save separated files by keyword
 full_df %>%
   group_by(keyword) %>%
   group_walk(~ write_csv(.x, glue(here::here("data/{.y$keyword}.csv"))))
--
+
 

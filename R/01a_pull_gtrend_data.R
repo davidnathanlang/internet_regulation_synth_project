@@ -11,41 +11,12 @@ states_vector <-
 
 
 search_terms <- c(
-  #  "kink.com",
   "porn",
   "pornhub",
-  # "redtube",
-  #  "youporn",
   "xvideos",
-  #  "tor",
-  #  "vpn",
-  #  "torrent",
-  #  "proxy",
-  # # "jailbreak",
-  # "tiktok",
-  #  "tor",
   "vpn",
-  'wicked',
-  'wicked.com'
-  # "brazzers",
-  # "justfor.fans",
-  # "chaturbate",
-  # "xhamster",
-  # "xvideos",
-  # "xnxx",
-  # "bangbros",
-  # "teamskeet",
-  # "porndoe",
-  # "letsdoeit",
-  # "onlyfans",
-  # "sextpanther",
-  # "adameve",
-  # "adultmoviemart",
-  # "adameveplus"
-  #  "torrent",
-  #  "proxy",
-  # "jailbreak",
-  #  "tiktok"
+  "wicked",
+  "wicked.com"
 )
 
 end_date <- '2024-10-31'
@@ -90,7 +61,7 @@ gtrends_call <- function(term = "VPN",
           print(e$message)
           print("Sleeping for at least an hour")
           
-          Sys.sleep(sample(3600:7200, 1))  # sleep for 1-2 hours
+          Sys.sleep(sample(900:3600, 1))  # sleep for 1-2 hours
           
           print(e$message)
           retries <- retries - 1  # decrement retry count
@@ -103,7 +74,7 @@ gtrends_call <- function(term = "VPN",
       })
     }
     
-    Sys.sleep(runif(1,30,120)) # necessary to keep the API happy
+    Sys.sleep(runif(1,300,600)) # necessary to keep the API happy
     
     if (is.null(my_trend$interest_over_time)) {
       return("Data Not Found")

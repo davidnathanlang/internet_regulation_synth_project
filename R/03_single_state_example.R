@@ -83,10 +83,11 @@ latex_table <- combined_weights %>% filter(if_any(where(is.numeric),~.>.001)) %>
 keyword_df_long %>% filter(time=='2022-01-01 2024-10-31') %>% count(term,state) ->oof
 keyword_df_long %>% ungroup() %>% filter(time_span=='2022-01-01 2024-10-31') %>% #filter(term=='pornhub') %>%
   filter(date<make_date(2023,04,01))  %>%
-  ggplot(aes(date,y=hits,color=state))+
+  ggplot(aes(date,y=hits,group = state))+
   geom_line() +
-  #gghighlight(state=="LA")+
-  facet_wrap(~term)
+  gghighlight(state=="LA",calculate_per_facet = TRUE)+
+  facet_wrap(~term) +
+  geom_vline(xintercept = make_date(2023,01,01))
 
 keyword_df_long %>% filter(hits==0) %>% count(term)
 keyword_df

@@ -3,44 +3,27 @@ pacman::p_load(tidyverse)
 pacman::p_load(tidycensus)
 pacman::p_load(janitor)
 pacman::p_load(lubridate)
+#https://action.freespeechcoalition.com/age-verification-resources/state-avs-laws/
 
-states_df <- tidycensus::fips_codes %>% 
-  distinct(state, state_code, state_name) 
-
-page <- read_html("https://action.freespeechcoalition.com/age-verification-bills/")
-table <- html_table(html_nodes(page, "table")[[1]])
-
-print(table)
-
-# Clean and format the dates
-table <- table %>%
-  filter(str_detect(`Last Updated`,"Failed",negate=TRUE)) %>%
-  mutate(
-    `Last Updated` = gsub("<br />.*", "", `Last Updated`), # Remove "<br />" and anything after it
-    `Last Updated` = as.Date(`Last Updated`, format = "%m/%d/%Y"), # Format as Date object
-    `Enforcement Date` = gsub("z", "", `Enforcement Date`), # Remove "z"
-    `Enforcement Date` = gsub("if passed", "", `Enforcement Date`), # Remove "if passed"
-    `Enforcement Date` = as.Date(`Enforcement Date`, format = "%m/%d/%Y")
-  ) # Format as Date object
-
-
-# Print the cleaned and formatted table
-# TODO Add Louisiana
-# TODO If Two word states enforce the law, this code will require modification
-
-implementation_df <-
-  table %>%
-  drop_na(`Enforcement Date`) %>%
-  bind_rows(
-    tibble(
-      Bill = "Louisiana HB 142",
-      `Last Updated` = lubridate::make_date(2022, 06, 15),
-      `Enforcement Date` = lubridate::make_date(2023, 01, 1)
-    )
-  ) %>%
-  mutate(state_name = word(Bill, 1)) %>%
-  left_join(states_df, by = "state_name") %>%
-  janitor::clean_names() %>%
-  mutate_if(is.Date,lubridate::as_date)
-
-implementation_df %>% write_csv(here::here("data/implementation_dates.csv"))
+law_effective_date<-tibble::tribble(
+  ~State, ~Abbreviation, ~LawEffectiveDate, ~RDateSyntax,
+  "Idaho", "ID", "2024-07-01", "make_date(2024, 7, 1)",
+  "Indiana", "IN", "2024-08-16", "make_date(2024, 7, 1)",
+  "Kansas", "KS", "2024-07-01", "make_date(2024, 7, 1)",
+  "Kentucky", "KY", "2024-07-15", "make_date(2024, 7, 15)",
+  "Nebraska", "NE", "2024-07-18", "make_date(2024, 7, 18)",
+  "Alabama", "AL", "2024-10-01", "make_date(2024, 10, 1)",
+  "Oklahoma", "OK", "2024-11-01", "make_date(2024, 10, 1)",
+  "Florida", "FL", "2025-01-01", "make_date(2025, 1, 1)",
+  "South Carolina", "SC", "2025-01-01", "make_date(2025, 1, 1)",
+  "Tennessee", "TN", "2025-01-01", "make_date(2025, 1, 1)",
+  "Georgia", "GA", "2025-07-01", "make_date(2025, 7, 1)",
+  "North Carolina", "NC", "2024-01-01", "make_date(2024, 1, 1)",
+  "Montana", "MT", "2024-01-01", "make_date(2024, 1, 1)",
+  "Texas", "TX", "2023-09-23", "make_date(2024, 1, 1)",
+  "Arkansas", "AR", "2023-07-31", "make_date(2023, 7, 31)",
+  "Virginia", "VA", "2023-07-01", "make_date(2023, 7, 1)",
+  "Mississippi", "MS", "2023-07-01", "make_date(2023, 7, 1)",
+  "Utah", "UT", "2023-05-03", "make_date(2023, 5, 3)",
+  "Louisiana", "LA", "2023-01-01","") 
+law_effective_date %>% write_csv(here::here("data/fsc_implementation_dates.csv"))
