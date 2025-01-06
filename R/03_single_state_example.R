@@ -8,6 +8,7 @@ library(tidyverse)
 library(tidylog)
 library(augsynth)
 library(pacman)
+library(janitor)
 pacman::p_load(patchwork, gghighlight, ggrepel,kableExtra)
 
 # Function to get models and effects for a given keyword
@@ -19,12 +20,15 @@ get_mod_and_effects <- function(keyword) {
     read_csv(here(str_glue("data/porn.csv"))),
     read_csv(here(str_glue("data/vpn.csv")))
   ) 
+  keyword_df_long %>% count(time_span)
   keyword_df <-
+    keyword_df_long %>%
     pivot_wider(names_from = term, values_from = hits) %>%
-    filter(time_span == "2022-01-01 2024-10-31") %>%
+    filter(time_span == "2022-01-01 2023-10-01") %>%
     distinct() %>%
-    filter(date < make_date(2023, 3, 1))
-  
+    filter(date < make_date(2023, 4, 1))
+  keyword_df %>% filter(post_treat==1) %>% count(state)
+
   # Define models for different datasets
   mod_pornhub <- augsynth(
     pornhub ~ post_treat,
@@ -32,9 +36,10 @@ get_mod_and_effects <- function(keyword) {
     time = date,
     data = keyword_df,
     progfunc = "None",
-    scm = FALSE,
+    scm = TRUE,
     fixedeff = FALSE
   )
+  
   
   mod_xvideos <- augsynth(
     xvideos ~ post_treat,
@@ -42,7 +47,7 @@ get_mod_and_effects <- function(keyword) {
     time = date,
     data = keyword_df,
     progfunc = "None",
-    scm = FALSE,
+    scm = TRUE,
     fixedeff = FALSE
   )
   
@@ -52,7 +57,7 @@ get_mod_and_effects <- function(keyword) {
     time = date,
     data = keyword_df,
     progfunc = "None",
-    scm = FALSE,
+    scm = TRUE,
     fixedeff = FALSE
   )
   
@@ -62,13 +67,42 @@ get_mod_and_effects <- function(keyword) {
     time = date,
     data = keyword_df,
     progfunc = "None",
-    scm = FALSE,
+    scm = TRUE,
     fixedeff = FALSE
   )
   
+  mod_porn_gs <- augsynth(
+    porn ~ post_treat,
+    unit = state,
+    time = date,
+    data = keyword_df,
+    progfunc = "GSYN",
+    scm = TRUE,
+    fixedeff = FALSE
+  )
+  m1<-summary(mod_pornhub,inf_type = 'conformal')
+  m2<-summary(mod_xvideos,inf_type = 'conformal')
+  m3<-summary(mod_vpn,inf_type = 'conformal')
+  m4<-summary(mod_porn,inf_type = 'conformal')
+  m2$average_att 
+  m1$average_att
+  m1$average_att
+  m2$average_att
+  m3$average_att
+  m1$inf_type
+  
+  summary(mod_porn,inf_type = 'conformal')
+  
+  mod_pornhub
+  summary(mod_porn,inf = TRUE)
   # Plot results
-  (plot(mod_pornhub) + plot(mod_xvideos)) / (plot(mod_vpn) + plot(mod_porn))
-}
+  (plot(mod_pornhub)+ggtitle("pornhub") + plot(mod_xvideos)+ggtitle("xvideos")) / (plot(mod_vpn)+ggtitle("vpn") + plot(mod_porn)+ggtitle("porn")) +
+    labs(title="Google Trends") +
+    plot_annotation(title='Change in Google Trends Relative to Synthetic Control')
+  ggsave(here::here("figures/single_state_example.png"),width = 7,height = 7)
+} place
+m1$
+keyword_df %>% count(state) ->temp
 combined_weights <- enframe(mod_pornhub$weights, value = 'pornhub', name = 'state') %>%
   left_join(enframe(mod_xvideos$weights, value = 'xvideos', name = 'state'), by = 'state') %>%
   left_join(enframe(mod_vpn$weights, value = 'vpn', name = 'state'), by = 'state') %>%
@@ -76,10 +110,13 @@ combined_weights <- enframe(mod_pornhub$weights, value = 'pornhub', name = 'stat
 combined_weights
 
 combined_weights %>% select(-state) %>% colSums()
+combined_weights %>% group_by(state) %>% summarise(lateral_weights=sum(c_across(pornhub:porn))) %>% arrange(desc(lateral_weights)) %>%
+  mutate(cumulative_weights=cumsum(lateral_weights)/sum(lateral_weights))
 latex_table <- combined_weights %>% filter(if_any(where(is.numeric),~.>.001)) %>%
   kbl(caption = "Combined Weights for Models", format = "latex", booktabs = TRUE) %>%
   kable_styling(latex_options = c("hold_position"))
 
+latex_table %>% write_lines(here::here("model_weights/single_synth_example.tex"))
 keyword_df_long %>% filter(time=='2022-01-01 2024-10-31') %>% count(term,state) ->oof
 keyword_df_long %>% ungroup() %>% filter(time_span=='2022-01-01 2024-10-31') %>% #filter(term=='pornhub') %>%
   filter(date<make_date(2023,04,01))  %>%
@@ -97,7 +134,7 @@ permutation_test <- function(s) {
   permute.panel <- keyword_df%>% mutate(permute_post = if_else(state == s & date >= make_date(2023,01,01), 1L, 0L))
   permute.est <- augsynth(pornhub ~ permute_post,
                           unit = state, time = date,
-                          data = permute.panel, progfun = "None", fixedeff = FALSE
+                          data = permute.panel, progfun = "None", fixedeff = FALSE,scm=TRUE
   )
   cbind(summary(permute.est)$att, state = s)
 }
@@ -141,9 +178,10 @@ plot(m1$mod, main = "Pornhub Search Volume (ATT)")
 plot(m2$mod, main = "VPN Search Volume (ATT)")
 plot(m3$mod, main = "Xvideos Search Volume (ATT)")
 plot(m4$mod, main = "Porn Search Volume (ATT)")
-
-# Visualizing cumulative effects
 m1$cum_effects
+# Visualizing cumulative effects
+m1$cum_effects %>%as.data.frame() %>% clean_rows mutate(rn=row_number()) %>% ggplot(aes(x=rn-1,y=catt))+
+                            geom_line()
 m2$cum_effects
 m3$cum_effects
 m4$cum_effects
