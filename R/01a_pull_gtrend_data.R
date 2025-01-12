@@ -15,17 +15,16 @@ search_terms <- c(
   "pornhub",
   "xvideos",
   "vpn",
-  "wicked",
-  "wicked.com"
+  "onlyfans"
 )
 
 end_date <- '2024-10-31'
 
 
 time_spans <- c(
-  str_glue("2023-01-01 {end_date}"),
-  str_glue("2022-01-01 {end_date}"),
-  str_glue("2019-01-01 {end_date}")
+  #str_glue("2023-01-01 {end_date}")
+  str_glue("2022-01-01 {end_date}")
+  #str_glue("2019-01-01 {end_date}")
 )
 
 parameter_tibble <- expand_grid(terms = search_terms,
