@@ -7,6 +7,7 @@ library(tidyverse)
 library(tidylog)
 library(patchwork)
 pacman::p_load(geofacet)
+pacman::p_load(ggrepel)
 
 # Create directories for saving outputs
 figures_dir <- here("figures")
@@ -90,9 +91,10 @@ hyperparameter_search <- function(keyword, time_range = '2022-01-01 2024-10-31',
       date_labels = "'%y",  # Display last two digits of the year
       date_breaks = "1 year"  # Adjust breaks as necessary
     ) +
-    theme_minimal()  # Use a cleaner theme
+    theme_minimal() + # Use a cleaner theme 
+  theme(legend.position = 'bottom')
   
-  overall_plot
+  
   ggsave(filename = here(figures_dir, str_glue("{keyword}_overall_plot.png")), plot = overall_plot,width = 9,height = 9)
   
   list(mod = mod, cum_effects = ce_effects, att_plot = att_plot, state_plots = combined_plot, overall_plot = overall_plot,search_term=keyword)
@@ -124,7 +126,7 @@ results[[4]]$cum_effects
   )
 )
 #ce_pre_registered %>% 
-ce_pre_registered %>% filter(rn %in% c(4,12)) %>% 
+ce_fig<-ce_pre_registered %>% filter(rn %in% c(4,12)) %>% 
   ggplot(aes(x = time_point, y = CATT, fill = topic)) +
   geom_bar(stat = "identity", position = "dodge", width = 0.7) +
   geom_errorbar(aes(ymin = CI.lower, ymax = CI.upper), width = 0.2, position = position_dodge(width = 0.7)) +
@@ -149,7 +151,8 @@ ce_pre_registered %>% filter(rn %in% c(4,12)) %>%
     legend.title = element_text(face = "bold"),
     legend.position = "top"
   ) 
-ggsave(filename = here(figures_dir, str_glue("pre-registered_cumulative_effects.png")), plot = overall_plot,width = 9,height = 9)
+
+ggsave(filename = here(figures_dir, str_glue("pre-registered_cumulative_effects.png")), plot = ce_fig,width = 9,height = 9)
 
   
 plots <- lapply(1:4, function(i) {
@@ -176,8 +179,10 @@ print(combined_plot)
 
 # Save the combined plot
 ggsave(
-  filename = here(figures_dir, str_glue("{keyword}_pre_registered_specification_plot.png")),
+  filename = here(figures_dir, str_glue("pre_registered_specification_plot.png")),
   plot = combined_plot,
   width = 10,
   height = 15
 )
+
+

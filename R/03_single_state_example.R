@@ -100,8 +100,7 @@ get_mod_and_effects <- function(keyword) {
     labs(title="Google Trends") +
     plot_annotation(title='Change in Google Trends Relative to Synthetic Control')
   ggsave(here::here("figures/single_state_example.png"),width = 7,height = 7)
-} place
-m1$
+} 
 keyword_df %>% count(state) ->temp
 combined_weights <- enframe(mod_pornhub$weights, value = 'pornhub', name = 'state') %>%
   left_join(enframe(mod_xvideos$weights, value = 'xvideos', name = 'state'), by = 'state') %>%
@@ -178,19 +177,4 @@ plot(m1$mod, main = "Pornhub Search Volume (ATT)")
 plot(m2$mod, main = "VPN Search Volume (ATT)")
 plot(m3$mod, main = "Xvideos Search Volume (ATT)")
 plot(m4$mod, main = "Porn Search Volume (ATT)")
-m1$cum_effects
-# Visualizing cumulative effects
-m1$cum_effects %>%as.data.frame() %>% clean_rows mutate(rn=row_number()) %>% ggplot(aes(x=rn-1,y=catt))+
-                            geom_line()
-m2$cum_effects
-m3$cum_effects
-m4$cum_effects
 
-# Additional data visualization
-full_df %>%
-  filter(keyword == "xvideos", time == "2022-01-01 2024-06-09") %>%
-  ggplot(aes(x = date, y = hits, color = state)) +
-  geom_vline(aes(xintercept = enforcement_date)) +
-  facet_wrap(~state) +
-  geom_line() +
-  theme(legend.position = 'none')

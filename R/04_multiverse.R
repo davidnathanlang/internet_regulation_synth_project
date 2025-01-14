@@ -18,8 +18,8 @@ covariates <- c(
   "male", "household_income", "white", "black", "amerindian", "asian",
   "native_hawaiian", "two_or_more_races"
 )
-scm_options <- c(TRUE, FALSE)  # Include SCM or not
-fixedeffects_options <- c(TRUE, FALSE)  # Include fixed effects or not
+scm_options <- c(T, F)  # Include SCM or not
+fixedeffects_options <- c(T, F)  # Include fixed effects or not
 n_leads_options <- c(104, 52, 26, NULL)  # Number of leads
 n_lags_options <- c(1, 3, 4, 13, NULL)  # Number of lags
 treatment_options <- c("post_treat", "post_treat_passage", "post_treat_enforcement_date")
@@ -121,9 +121,9 @@ param_grid <- expand.grid(
 plan(multisession, workers = parallel::detectCores() - 1)
 
 # Apply grid search in parallel with caching
-results <- param_grid %>%
+results <- param_grid %>% filter(scm==F) %>%
   mutate(
-    model = future_pmap(
+    model = pwalk(
       list(keyword, time_range, include_covariates, scm, fixedeffects, n_leads, n_lags, treatment),
       ~ run_multisynth(..1, ..2, ..3, ..4, ..5, ..6, ..7, ..8, output_dir),  # Pass parameters explicitly
       .progress = TRUE
