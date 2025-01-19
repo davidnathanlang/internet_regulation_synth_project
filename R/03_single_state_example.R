@@ -12,7 +12,7 @@ library(janitor)
 pacman::p_load(patchwork, gghighlight, ggrepel,kableExtra)
 
 # Function to get models and effects for a given keyword
-get_mod_and_effects <- function(keyword) {
+#get_mod_and_effects <- function(keyword) {
   # Load and preprocess data
   keyword_df_long <- bind_rows(
     read_csv(here(str_glue("data/pornhub.csv"))),
@@ -70,31 +70,24 @@ get_mod_and_effects <- function(keyword) {
     scm = TRUE,
     fixedeff = FALSE
   )
+
+  m1<-summary(mod_pornhub,inf_type = 'jackknife') 
+  m2<-summary(mod_xvideos,inf_type = 'jackknife')
+  m3<-summary(mod_vpn,inf_type = 'jackknife')
+  m4<-summary(mod_porn,inf_type = 'jackknife')
   
-  mod_porn_gs <- augsynth(
-    porn ~ post_treat,
-    unit = state,
-    time = date,
-    data = keyword_df,
-    progfunc = "GSYN",
-    scm = TRUE,
-    fixedeff = FALSE
-  )
-  m1<-summary(mod_pornhub,inf_type = 'conformal')
-  m2<-summary(mod_xvideos,inf_type = 'conformal')
-  m3<-summary(mod_vpn,inf_type = 'conformal')
-  m4<-summary(mod_porn,inf_type = 'conformal')
-  m2$average_att 
-  m1$average_att
-  m1$average_att
-  m2$average_att
-  m3$average_att
-  m1$inf_type
+  results<-
+  bind_rows(
+  m1$average_att %>% mutate(search_term='pornhub'),
+  m2$average_att %>% mutate(search_term='xvideos'),
+  m3$average_att %>% mutate(search_term='vpn'),
+  m4$average_att %>% mutate(search_term='porn'),
+) %>% select(search_term,Estimate,Std.Error)
+  library(xtable)
+  latex_table <- xtable(results, caption = "Search terms with their estimates and standard errors.")
+  latex_table %>% write_lines(here::here('tables/single_synth_att.tex'))
   
-  summary(mod_porn,inf_type = 'conformal')
   
-  mod_pornhub
-  summary(mod_porn,inf = TRUE)
   # Plot results
   (plot(mod_pornhub)+ggtitle("pornhub") + plot(mod_xvideos)+ggtitle("xvideos")) / (plot(mod_vpn)+ggtitle("vpn") + plot(mod_porn)+ggtitle("porn")) +
     labs(title="Google Trends") +
@@ -116,7 +109,7 @@ latex_table <- combined_weights %>% filter(if_any(where(is.numeric),~.>.001)) %>
   kable_styling(latex_options = c("hold_position"))
 
 latex_table %>% write_lines(here::here("model_weights/single_synth_example.tex"))
-keyword_df_long %>% filter(time=='2022-01-01 2024-10-31') %>% count(term,state) ->oof
+
 keyword_df_long %>% ungroup() %>% filter(time_span=='2022-01-01 2024-10-31') %>% #filter(term=='pornhub') %>%
   filter(date<make_date(2023,04,01))  %>%
   ggplot(aes(date,y=hits,group = state))+
@@ -162,19 +155,3 @@ inference_tbl <- post_mspe %>%
   mutate(mspe_ratio = (postmspe / premspe)^2) %>%
   arrange(desc(mspe_ratio)) %>%
   mutate(mspe_rank=row_number())
-
-inference_tbl
-inference_tbl %>% filter(state=="OH")
-
-# Generate models and plots
-m1 <- get_mod_and_effects("pornhub")
-m2 <- get_mod_and_effects("vpn")
-m3 <- get_mod_and_effects("xvideos")
-m4 <- get_mod_and_effects("porn")
-
-# Combined plots for ATT
-plot(m1$mod, main = "Pornhub Search Volume (ATT)")
-plot(m2$mod, main = "VPN Search Volume (ATT)")
-plot(m3$mod, main = "Xvideos Search Volume (ATT)")
-plot(m4$mod, main = "Porn Search Volume (ATT)")
-

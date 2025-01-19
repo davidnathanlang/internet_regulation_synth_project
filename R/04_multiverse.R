@@ -23,7 +23,7 @@ fixedeffects_options <- c(T, F)  # Include fixed effects or not
 n_leads_options <- c(104, 52, 26, NULL)  # Number of leads
 n_lags_options <- c(1, 3, 4, 13, NULL)  # Number of lags
 treatment_options <- c("post_treat", "post_treat_passage", "post_treat_enforcement_date")
-
+names(keyword_df)
 # Create output directory if it doesn't exist
 output_dir <- here::here("multiverse_mod")
 if (!dir.exists(output_dir)) {

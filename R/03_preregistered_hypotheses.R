@@ -40,22 +40,31 @@ hyperparameter_search <- function(keyword, time_range = '2022-01-01 2024-10-31',
   ce_effects
   # Save model output
   saveRDS(mod, file = here(models_dir, str_glue("{keyword}_model.rds")))
+  three_month_att<- ce_effects %>% filter(rn+1==13) %>% transmute(ATT=CATT/13) %>% pull()
   
   # Generate plots
-  att_plot <- plot(mod) + labs(title = str_glue("{keyword} ATT"))
+  att_plot <- plot(mod) + labs(title = str_glue("{keyword} ATT")) +
+    geom_hline(yintercept = three_month_att,linetype='dashed')+
+    annotate("text", x = -12, y = three_month_att+2, label = str_c("ATT = ",round(three_month_att,1)))
+att_plot
   treated_states <- keyword_df %>%
     filter(post_treat == 1) %>%
     distinct(state) %>%
     pull(state)
-  
+  ?gsynth
+  oof<-plot(mod, id = 'LA')
+  cumuEff(mod,cumu = FALSE,id='LA',c(0,12)) %>% as_tibble()
   # Generate plots for each state and store in a list
   state_plots <- lapply(treated_states, function(state) {
+    thre_month_est<-cumuEff(mod,cumu = FALSE,id=state,c(0,12)) %>% as_tibble() %>% summarise(three_month_att=mean(catt)) %>% pull(three_month_att)
     plot(mod, id = state) + 
     labs(
       x = "Time (Weeks) ",    # New x-axis label
       y =  "ATT", # (Average Treatment Effect)",         # New y-axis label
       title = str_glue("{state}") # Unique title for each plot
     ) +
+      geom_hline(yintercept = thre_month_est,linetype='dashed')+
+      annotate("text", x = -25, y = thre_month_est+2, label = str_c("ATT = ",round(thre_month_est,1))) +
       theme_minimal()  # Optional: Use a clean theme
   })
   
@@ -112,7 +121,21 @@ lapply(results, function(res) {
   res$cum_effects
 })
 
-str(results)
+calculate_pct_change <- function(result, mod_index) {
+  plot(result[[mod_index]]$mod, type = 'counterfactual')$data %>%
+    pivot_wider(names_from = type, values_from = outcome) %>%
+    filter(time >= 0) %>%
+    mutate(pct_change = cumsum(tr - co) / cumsum(co)) %>% mutate(topic=result[[mod_index]]$search_term,rn=time)
+}
+
+pct_change<-bind_rows(
+calculate_pct_change(results, 1),
+calculate_pct_change(results, 2),
+calculate_pct_change(results, 3),
+calculate_pct_change(results, 4)
+)
+
+
 ce_pre_registered<-
 bind_rows(
 results[[1]]$cum_effects  ,
@@ -123,35 +146,49 @@ results[[4]]$cum_effects
   time_point = case_when(
     rn == 4 ~ "1 Month",
     rn == 12 ~ "3 Months"
-  )
-)
+  )) %>% 
+  left_join(pct_change,by=c('topic','rn'))
+
 #ce_pre_registered %>% 
-ce_fig<-ce_pre_registered %>% filter(rn %in% c(4,12)) %>% 
+ce_fig <- ce_pre_registered %>% 
+  filter(rn %in% c(4, 12)) %>% 
   ggplot(aes(x = time_point, y = CATT, fill = topic)) +
-  geom_bar(stat = "identity", position = "dodge", width = 0.7) +
-  geom_errorbar(aes(ymin = CI.lower, ymax = CI.upper), width = 0.2, position = position_dodge(width = 0.7)) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + # Add zero line
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.6,alpha=1) +
+  geom_errorbar(aes(ymin = CI.lower, ymax = CI.upper), 
+                width = 0.2, 
+                position = position_dodge(width = 0.8),
+                size = 0.8) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
   geom_label_repel(
-    aes(label = round(CATT, 1)), # Add point estimates as labels
-    position = position_dodge(width = 0.7),
-    size = 4,
-    color = "black"
+    aes(label = str_c(round(CATT, 1), '\n (', round(pct_change * 100, 1), '%)')),
+    position = position_dodge(width = 0.8), 
+    size = 3.5,
+    color = "black",
+    #nudge_y = 10,
+    segment.color = "grey70"
   ) +
+  scale_fill_brewer(palette = "Set2") +
   labs(
     x = "Evaluation Time Point",
     y = "Cumulative ATT",
     title = "Cumulative ATT with Confidence Intervals at 1 and 3 Months",
+    subtitle = "Displaying differences by topic across time points",
     fill = "Topic"
   ) +
   theme_minimal() +
   theme(
-    panel.grid.major = element_line(color = "grey85"),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(size = 12, face = "italic", hjust = 0.5),
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 12, face = "bold"),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 12, face = "bold"),
+    panel.grid.major = element_line(color = "grey90"),
     panel.grid.minor = element_blank(),
-    axis.title = element_text(face = "bold"),
-    legend.title = element_text(face = "bold"),
     legend.position = "top"
-  ) 
+  )
 
+ce_fig
 ggsave(filename = here(figures_dir, str_glue("pre-registered_cumulative_effects.png")), plot = ce_fig,width = 9,height = 9)
 
   
@@ -165,8 +202,9 @@ plots <- lapply(1:4, function(i) {
     theme_minimal()  # Optional: Use a clean theme
 })
 
+three_month_att<-plots[[1]]$data %>% filter(time>0,time<13) %>% summarise(mean(ATT)) %>% pull()
 # Assign individual plots for reference
-p1 <- plots[[1]]
+p1 <- plots[[1]] 
 p2 <- plots[[2]]
 p3 <- plots[[3]]
 p4 <- plots[[4]]
