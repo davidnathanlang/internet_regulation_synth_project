@@ -12,7 +12,7 @@ pacman::p_load(unglue)
 
 # List files and parse data
 mm <- list.files(here::here('multiverse_mod'))
-pattern <- "{keyword}_{start_date}_{end_date}_{covariate_tag}_scm{scm}_fixedeff{fixedeffects}_leads{leads}_lags{lags}_treatment_{treatment}.rds"
+pattern <- "{keyword}_{start_date}_{end_date}_{covariate_tag}_scm{scm}_fixedeff{fixedeffects}_leads{leads}_lags{lags}_treatment_{treatment}_verification_method_{verification_method}.rds"
 
 parsed_data <- unglue_data(mm, pattern) %>%
   mutate(
@@ -20,10 +20,22 @@ parsed_data <- unglue_data(mm, pattern) %>%
     rn = row_number()
   )
 
+parsed_data %>% count(keyword)
+parsed_data %>% count(start_date)
+parsed_data %>% count(end_date)
+parsed_data %>% count(covariate_tag)
+parsed_data %>% count(scm)
+parsed_data %>% count(fixedeffects)
+parsed_data %>% count(leads)
+parsed_data %>% count(lags)
+parsed_data %>% count(treatment)
+parsed_data %>% count(verification_method)
 # Loop through each row in parsed_data
+i<-1
 for (i in seq_len(nrow(parsed_data))) {
+  #gc()
   # Extract the current row as a single-row data frame
-  single_example <- parsed_data[i, ]
+  single_example <- parsed_data[i, ] %>% mutate_at(c('leads','lags'),as.numeric)
   
   # Define the output file path
   output_path <- here::here(glue("multiverse_tables/{single_example$rn}.csv"))
@@ -39,11 +51,11 @@ for (i in seq_len(nrow(parsed_data))) {
     # Read the model
     ms_mod <- read_rds(single_example$path)
     ms_summary <- summary(ms_mod)
-    
+    single_example
     # Post-treatment analysis
     post_treatment <- ms_summary$att %>%
       as.data.frame() %>%
-      filter(Time >= 0) %>%
+      filter(Time >= 0,Time<=single_example$lags) %>%
       group_by(Level) %>%
       summarise(
         POST_MSPE = mean(Estimate^2),
@@ -53,9 +65,11 @@ for (i in seq_len(nrow(parsed_data))) {
       )
     
     # Pre-treatment analysis
+    if(is.null(single_example$leads))
+      single_example$leads<- -Inf
     pre_treatment <- ms_summary$att %>%
       as.data.frame() %>%
-      filter(Time < 0) %>%
+      filter(Time < 0,Time>=-single_example$leads) %>%
       group_by(Level) %>%
       summarise(
         PRE_MSPE = mean(Estimate^2),

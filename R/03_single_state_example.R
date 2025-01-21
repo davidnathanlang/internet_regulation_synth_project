@@ -93,7 +93,7 @@ pacman::p_load(patchwork, gghighlight, ggrepel,kableExtra)
     labs(title="Google Trends") +
     plot_annotation(title='Change in Google Trends Relative to Synthetic Control')
   ggsave(here::here("figures/single_state_example.png"),width = 7,height = 7)
-} 
+
 keyword_df %>% count(state) ->temp
 combined_weights <- enframe(mod_pornhub$weights, value = 'pornhub', name = 'state') %>%
   left_join(enframe(mod_xvideos$weights, value = 'xvideos', name = 'state'), by = 'state') %>%

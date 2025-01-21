@@ -23,7 +23,7 @@ plan(multisession, workers = availableCores()-1)
 df_all_raw <- future_map_dfr(state_paths, vroom) # vroom is a fast read csv
 
 df_with_imp <- df_all_raw %>%
-  tidylog::left_join(implementation_dates %>% select(enforcement_date, state,enforcement_action_date,passage_date,government_id:any_reasonable_method),
+  tidylog::left_join(implementation_dates %>% select(enforcement_date, state,enforcement_action_date,passage_date,government_id:any_id_requirement),
                      by = "state") %>%
   mutate(
     date = lubridate::as_date(date),

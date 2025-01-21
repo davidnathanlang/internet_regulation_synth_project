@@ -9,21 +9,27 @@ library(patchwork)
 library(augsynth)
 library(furrr)
 pacman::p_load(geofacet)
-
+gc()
 # Define keywords, time ranges, covariates, and model parameters
 keywords <- c("pornhub", "xvideos", "vpn", "porn")
-time_ranges <- c("2019-01-01 2024-10-31", "2022-01-01 2024-10-31", "2023-01-01 2024-10-31")
+time_ranges <- c("2019-01-01 2024-10-31","2022-01-01 2024-10-31")
 covariates <- c(
   "housesholds_with_internet_access", "high_school_or_ged", "bachelors_plus",
   "male", "household_income", "white", "black", "amerindian", "asian",
   "native_hawaiian", "two_or_more_races"
 )
-scm_options <- c(T, F)  # Include SCM or not
+scm_options <- c(T)  # Include SCM or not
 fixedeffects_options <- c(T, F)  # Include fixed effects or not
-n_leads_options <- c(104, 52, 26, NULL)  # Number of leads
-n_lags_options <- c(1, 3, 4, 13, NULL)  # Number of lags
+n_leads_options <- c(104, 52, 26,# weekly
+                     24,12,6, # monthly
+                     NULL)  # Number of leads
+n_lags_options <- c(13,4, # weekly
+                    3,1, #monthly
+                    NULL)  # Number of lags
 treatment_options <- c("post_treat", "post_treat_passage", "post_treat_enforcement_date")
-names(keyword_df)
+verification_options<-c('government_id','digitized_id','transaction_data','database_id','any_reasonable_method','any_id_requirement')
+treatment<-'post_treat'
+verification_method<-'government_id'
 # Create output directory if it doesn't exist
 output_dir <- here::here("multiverse_mod")
 if (!dir.exists(output_dir)) {
@@ -31,19 +37,19 @@ if (!dir.exists(output_dir)) {
 }
 
 # Function to generate file path for caching
-get_output_path <- function(output_dir, keyword, time_range, include_covariates, scm, fixedeffects, n_leads, n_lags, treatment) {
+get_output_path <- function(output_dir, keyword, time_range, include_covariates, scm, fixedeffects, n_leads, n_lags, treatment,verification_method) {
   covariate_tag <- ifelse(include_covariates, "with_covariates", "without_covariates")
-  here::here(glue("{output_dir}/{keyword}_{gsub(' ', '_', time_range)}_{covariate_tag}_scm{scm}_fixedeff{fixedeffects}_leads{n_leads}_lags{n_lags}_treatment_{treatment}.rds"))
+  here::here(glue("{output_dir}/{keyword}_{gsub(' ', '_', time_range)}_{covariate_tag}_scm{scm}_fixedeff{fixedeffects}_leads{n_leads}_lags{n_lags}_treatment_{treatment}_verification_method_{verification_method}.rds"))
 }
 
 # Function to run `multisynth` for a single combination of parameters
-run_multisynth <- function(keyword, time_range, include_covariates, scm, fixedeffects, n_leads, n_lags, treatment, output_dir) {
-  print(str_c(keyword, time_range, include_covariates, scm, fixedeffects, n_leads, n_lags, treatment, sep = "+"))
+run_multisynth <- function(keyword, time_range, include_covariates, scm, fixedeffects, n_leads, n_lags, treatment,verification_method, output_dir) {
+  print(str_c(keyword, time_range, include_covariates, scm, fixedeffects, n_leads, n_lags, treatment,verification_method, sep = "+"))
   
   # Check if model already exists
-  output_path <- get_output_path(output_dir, keyword, time_range, include_covariates, scm, fixedeffects, n_leads, n_lags, treatment)
+  output_path <- get_output_path(output_dir, keyword, time_range, include_covariates, scm, fixedeffects, n_leads, n_lags, treatment,verification_method)
   if (file.exists(output_path)) {
-    message(glue("Model already exists for '{keyword}', time range '{time_range}', covariates '{include_covariates}', scm '{scm}', fixedeffects '{fixedeffects}', n_leads '{n_leads}', n_lags '{n_lags}', treatment '{treatment}'. Skipping..."))
+    message(glue("Model already exists for '{keyword}', time range '{time_range}', covariates '{include_covariates}', scm '{scm}', fixedeffects '{fixedeffects}', n_leads '{n_leads}', n_lags '{n_lags}', treatment '{treatment}',verification_method '{verification_method}'. Skipping..."))
     return(readRDS(output_path))  # Load cached model
   }
   
@@ -55,15 +61,22 @@ run_multisynth <- function(keyword, time_range, include_covariates, scm, fixedef
         post_treat_enforcement_date = if_else(date >= enforcement_date, 1L, 0L, 0L)
       ) %>%
       filter(time_span == time_range) %>%
+      filter(!(.[,treatment])| .[,verification_method]) %>%
       distinct(state, date, .keep_all = TRUE),  # Ensure unique rows
     error = function(e) {
       message(glue("Error reading data for keyword {keyword}: {e$message}"))
       return(NULL)
     }
   )
-  
+
   if (is.null(keyword_df) || nrow(keyword_df) == 0) {
-    message(glue("No data available for keyword '{keyword}' and time range '{time_range}'"))
+    print(output_path)
+    message(
+      glue("No data available for keyword '{keyword}' and time range '{time_range}'
+           \n
+           ")
+      
+            )
     return(NULL)
   }
   
@@ -90,7 +103,7 @@ run_multisynth <- function(keyword, time_range, include_covariates, scm, fixedef
       n.lags = n_lags  # Number of lags
     ),
     error = function(e) {
-      message(glue("Error running multisynth for keyword '{keyword}', scm '{scm}', fixedeffects '{fixedeffects}', n_leads '{n_leads}', n_lags '{n_lags}', treatment '{treatment}': {e$message}"))
+      message(glue("Error running multisynth for keyword '{keyword}', scm '{scm}', fixedeffects '{fixedeffects}', n_leads '{n_leads}', n_lags '{n_lags}', treatment '{treatment}', verification_method '{verification_method}'.: {e$message}"))
       return(NULL)
     }
   )
@@ -98,7 +111,7 @@ run_multisynth <- function(keyword, time_range, include_covariates, scm, fixedef
   if (!is.null(model)) {
     # Save the model to cache
     saveRDS(model, output_path)
-    message(glue("Saved model for keyword '{keyword}', time range '{time_range}', covariates '{include_covariates}', scm '{scm}', fixedeffects '{fixedeffects}', n_leads '{n_leads}', n_lags '{n_lags}', treatment '{treatment}' to {output_path}"))
+    message(glue("Saved model for keyword '{keyword}', time range '{time_range}', covariates '{include_covariates}', scm '{scm}', fixedeffects '{fixedeffects}', n_leads '{n_leads}', n_lags '{n_lags}', treatment '{treatment}', verification_method '{verification_method}'. to {output_path}"))
   }
   
   return(model)
@@ -114,34 +127,67 @@ param_grid <- expand.grid(
   n_leads = n_leads_options,
   n_lags = n_lags_options,
   treatment = treatment_options,
+  verification_method = verification_options,
   stringsAsFactors = FALSE
-)
+)  %>% filter(
+  
+(
+  (time_range=='2022-01-01 2024-10-31' &
+   (n_leads %in% c(104,52,26)|is.null(n_leads)) &
+  n_lags %in% c(4,13))|is.null(n_lags) 
+) |
+  (
+  (time_range=='2019-01-01 2024-10-31' &
+     (n_leads %in% c(24,12,6)|is.null(n_leads)) &
+     n_lags %in% c(1,3))|is.null(n_lags)
+  )
+  
+  )
+
 
 # Set up parallel processing with furrr
 plan(multisession, workers = parallel::detectCores() - 1)
 
 # Apply grid search in parallel with caching
-results <- param_grid %>% filter(scm==F) %>%
-  mutate(
-    model = pwalk(
-      list(keyword, time_range, include_covariates, scm, fixedeffects, n_leads, n_lags, treatment),
-      ~ run_multisynth(..1, ..2, ..3, ..4, ..5, ..6, ..7, ..8, output_dir),  # Pass parameters explicitly
-      .progress = TRUE
-    )
-  )
+safe_run_multisynth <- safely(run_multisynth)
+future_pwalk(
+  list(
+    param_grid$keyword,
+    param_grid$time_range,
+    param_grid$include_covariates,
+    param_grid$scm,
+    param_grid$fixedeffects,
+    param_grid$n_leads,
+    param_grid$n_lags,
+    param_grid$treatment,
+    param_grid$verification_method
+  ),
+  ~ safe_run_multisynth(..1, ..2, ..3, ..4, ..5, ..6, ..7, ..8, ..9,output_dir),  # Pass parameters explicitly
+  .progress = TRUE
+)
+example_param_grid <-
+  param_grid %>% filter(row_number()==106L) 
 
+results<-
+future_pwalk(
+  list(
+    example_param_grid$keyword,
+    example_param_grid$time_range,
+    example_param_grid$include_covariates,
+    example_param_grid$scm,
+    example_param_grid$fixedeffects,
+    example_param_grid$n_leads,
+    example_param_grid$n_lags,
+    example_param_grid$treatment,
+    example_param_grid$verification_method
+  ),
+  ~ safe_run_multisynth(..1, ..2, ..3, ..4, ..5, ..6, ..7, ..8, ..9,output_dir),  # Pass parameters explicitly
+  .progress = TRUE
+)
+
+example_param_grid
 # Shut down parallel workers
 plan(sequential)
 
 message("Multiverse models saved to: ", output_dir)
-
-# param_grid
-# plot(`porn_2022-01-01_2024-10-31_without_covariates_scmTRUE_fixedeffFALSE_leads26_lags13_treatment_post_treat_enforcement_date`)
-# sm<-summary(`porn_2022-01-01_2024-10-31_without_covariates_scmTRUE_fixedeffFALSE_leads26_lags13_treatment_post_treat_enforcement_date`)
-# summary(`porn_2022-01-01_2024-10-31_without_covariates_scmTRUE_fixedeffFALSE_leads26_lags13_treatment_post_treat_enforcement_date`,inf_type = 'jackknife')
-# 
-# 
-# ?summary()
-# ?multisynth()
-# oof<-sm$att %>% filter(Time>=0,Level=='Average') 
-# mean(oof$Estimate)
+results
