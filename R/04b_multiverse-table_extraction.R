@@ -33,6 +33,7 @@ parsed_data %>% count(verification_method)
 # Loop through each row in parsed_data
 i<-1
 for (i in seq_len(nrow(parsed_data))) {
+  if(i%/%100==0) gc()
   #gc()
   # Extract the current row as a single-row data frame
   single_example <- parsed_data[i, ] %>% mutate_at(c('leads','lags'),as.numeric)

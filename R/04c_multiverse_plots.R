@@ -19,8 +19,8 @@ for (state in unique(outcomes$Level)){
   print(state)
 
 outcomes %>% filter(Level==state)  %>% 
-  ggplot(aes(y=ATT,colour = treatment))+
-  geom_boxplot()+
+  ggplot(aes(y=ATT,x = treatment))+
+  geom_violin()+
   facet_wrap(~keyword) +
   labs(title = str_glue('Multiverse_{state}'))
 ggsave(here::here(str_glue('figures/multiverse_{state}.png')),width=9,height=9)
@@ -28,5 +28,8 @@ ggsave(here::here(str_glue('figures/multiverse_{state}.png')),width=9,height=9)
 
 outcomes %>% filter(Level=='Average') %>% count(treatment,keyword)
 
-outcomes %>% filter(Level=='Average')
+outcomes %>% filter(Level=='Average') %>% filter(keyword=='pornhub') %>% summarise(min(CATT),max(CATT))
+outcomes %>% filter(Level=='Average') %>% filter(keyword=='xvideos') %>% summarise(min(CATT),max(CATT))
+outcomes %>% filter(Level=='Average') %>% filter(keyword=='vpn') %>% summarise(min(CATT),max(CATT))
+outcomes %>% filter(Level=='Average') %>% filter(keyword=='porn') %>% summarise(min(CATT),max(CATT))
 outcomes %>% count(scm)

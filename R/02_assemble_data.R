@@ -16,7 +16,7 @@ implementation_dates <-
   rename(state = Abbreviation, enforcement_date = LawEffectiveDate,
          enforcement_action_date = Enforcement_Date, passage_date = PassageDate) %>%
   mutate_at(c("passage_date","enforcement_date","enforcement_action_date"),as.Date,format="%m/%d/%Y")
-?as_date
+
 # Adjust for your computer
 plan(multisession, workers = availableCores()-1)
 
