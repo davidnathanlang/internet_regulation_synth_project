@@ -78,10 +78,10 @@ pacman::p_load(patchwork, gghighlight, ggrepel,kableExtra)
   
   results<-
   bind_rows(
-  m1$average_att %>% mutate(search_term='pornhub'),
-  m2$average_att %>% mutate(search_term='xvideos'),
-  m3$average_att %>% mutate(search_term='vpn'),
-  m4$average_att %>% mutate(search_term='porn'),
+  m1$att %>% mutate(search_term='pornhub'),
+  m2$att %>% mutate(search_term='xvideos'),
+  m3$att %>% mutate(search_term='vpn'),
+  m4$att %>% mutate(search_term='porn'),
 ) %>% select(search_term,Estimate,Std.Error)
   library(xtable)
   latex_table <- xtable(results, caption = "Search terms with their estimates and standard errors.")
