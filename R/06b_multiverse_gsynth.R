@@ -1,3 +1,5 @@
+# Output is dependent on previous script, only runs for 960 iteractions, rather than 1152 (per param_grid)
+
 library(dplyr)
 library(readr)
 library(here)

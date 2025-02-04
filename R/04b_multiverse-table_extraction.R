@@ -13,6 +13,12 @@ pacman::p_load(unglue)
 
 # List files and parse data
 mm <- list.files(here::here('multiverse_mod'))
+
+table_dir <- here::here("multiverse_tables")
+if (!dir.exists(table_dir)) {
+  dir.create(table_dir)
+}
+
 pattern <- "{keyword}_{start_date}_{end_date}_{covariate_tag}_scm{scm}_fixedeff{fixedeffects}_leads{leads}_lags{lags}_treatment_{treatment}_verification_method_{verification_method}.rds"
 parsed_data <- unglue_data(mm, pattern) %>%
   mutate(

@@ -8,8 +8,10 @@ library(tidylog)
 library(patchwork)
 library(augsynth)
 library(furrr)
+
 pacman::p_load(geofacet)
 gc()
+
 # Define keywords, time ranges, covariates, and model parameters
 keywords <- c("pornhub", "xvideos", "vpn", "porn")
 time_ranges <- c("2019-01-01 2024-10-31","2022-01-01 2024-10-31")
@@ -18,19 +20,29 @@ covariates <- c(
   "male", "household_income", "white", "black", "amerindian", "asian",
   "native_hawaiian", "two_or_more_races"
 )
+
 scm_options <- c(T)  # Include SCM or not
+
 fixedeffects_options <- c(T, F)  # Include fixed effects or not
+
 n_leads_options <- c(104, 52, 26,# weekly
                      24,12,6, # monthly
                      NULL)  # Number of leads
+
 n_lags_options <- c(13,4, # weekly
                     3,1, #monthly
                     NULL)  # Number of lags
+
 treatment_options <- c("post_treat", "post_treat_passage", "post_treat_enforcement_date")
+
 verification_options<-c('government_id','digitized_id','transaction_data','database_id','any_reasonable_method','any_id_requirement')
+
 treatment<-'post_treat'
+
 verification_method<-'government_id'
+
 # Create output directory if it doesn't exist
+
 output_dir <- here::here("multiverse_mod")
 if (!dir.exists(output_dir)) {
   dir.create(output_dir)
@@ -163,10 +175,10 @@ future_pwalk(
     param_grid$verification_method
   ),
   ~ safe_run_multisynth(..1, ..2, ..3, ..4, ..5, ..6, ..7, ..8, ..9,output_dir),  # Pass parameters explicitly
-  .progress = TRUE
-)
-example_param_grid <-
-  param_grid %>% filter(row_number()==106L) 
+  .progress = TRUE 
+) # This may hang with progress @ 100%, confirm 3457 files in the folder before terminating...
+
+example_param_grid <- param_grid %>% filter(row_number()==106L) 
 
 results<-
 future_pwalk(
@@ -185,9 +197,8 @@ future_pwalk(
   .progress = TRUE
 )
 
-example_param_grid
 # Shut down parallel workers
+
 plan(sequential)
 
 message("Multiverse models saved to: ", output_dir)
-results
