@@ -46,23 +46,21 @@ hyperparameter_search <- function(keyword, time_range = '2022-01-01 2024-10-31',
   att_plot <- plot(mod) + labs(title = str_glue("{keyword} ATT")) +
     geom_hline(yintercept = three_month_att,linetype='dashed')+
     annotate("text", x = -12, y = three_month_att+2, label = str_c("ATT = ",round(three_month_att,1)))
-att_plot
+  
   treated_states <- keyword_df %>%
     filter(post_treat == 1) %>%
     distinct(state) %>%
     pull(state)
-  ?gsynth
-  oof<-plot(mod, id = 'LA')
-  cumuEff(mod,cumu = FALSE,id='LA',c(0,12)) %>% as_tibble()
+  
   # Generate plots for each state and store in a list
   state_plots <- lapply(treated_states, function(state) {
     thre_month_est<-cumuEff(mod,cumu = FALSE,id=state,c(0,12)) %>% as_tibble() %>% summarise(three_month_att=mean(catt)) %>% pull(three_month_att)
     plot(mod, id = state) + 
-    labs(
-      x = "Time (Weeks) ",    # New x-axis label
-      y =  "ATT", # (Average Treatment Effect)",         # New y-axis label
-      title = str_glue("{state}") # Unique title for each plot
-    ) +
+      labs(
+        x = "Time (Weeks) ",    # New x-axis label
+        y =  "ATT", # (Average Treatment Effect)",         # New y-axis label
+        title = str_glue("{state}") # Unique title for each plot
+      ) +
       geom_hline(yintercept = thre_month_est,linetype='dashed')+
       annotate("text", x = -25, y = thre_month_est+2, label = str_c("ATT = ",round(thre_month_est,1))) +
       theme_minimal()  # Optional: Use a clean theme
@@ -74,7 +72,7 @@ att_plot
     theme(plot.title = element_text(hjust = 0.5))
   
   # Display the combined plot
-  combined_plot
+  # combined_plot
   
   # Save figures
   ggsave(filename = here(figures_dir, str_glue("{keyword}_state_plots.png")), plot = combined_plot,width = 9,height = 9)
@@ -101,7 +99,7 @@ att_plot
       date_breaks = "1 year"  # Adjust breaks as necessary
     ) +
     theme_minimal() + # Use a cleaner theme 
-  theme(legend.position = 'bottom')
+    theme(legend.position = 'bottom')
   
   
   ggsave(filename = here(figures_dir, str_glue("{keyword}_overall_plot.png")), plot = overall_plot,width = 9,height = 9)
@@ -116,10 +114,10 @@ results <- lapply(keywords, function(keyword) {
 })
 
 # Access and display results
-lapply(results, function(res) {
-  print(summary(res$mod))
-  res$cum_effects
-})
+# lapply(results, function(res) {
+#   print(summary(res$mod))
+#   res$cum_effects
+# })
 
 calculate_pct_change <- function(result, mod_index) {
   plot(result[[mod_index]]$mod, type = 'counterfactual')$data %>%
@@ -129,24 +127,24 @@ calculate_pct_change <- function(result, mod_index) {
 }
 
 pct_change<-bind_rows(
-calculate_pct_change(results, 1),
-calculate_pct_change(results, 2),
-calculate_pct_change(results, 3),
-calculate_pct_change(results, 4)
+  calculate_pct_change(results, 1),
+  calculate_pct_change(results, 2),
+  calculate_pct_change(results, 3),
+  calculate_pct_change(results, 4)
 )
 
 
 ce_pre_registered<-
-bind_rows(
-results[[1]]$cum_effects  ,
-results[[2]]$cum_effects ,
-results[[3]]$cum_effects  ,
-results[[4]]$cum_effects
-) %>%   mutate(
-  time_point = case_when(
-    rn == 4 ~ "1 Month",
-    rn == 12 ~ "3 Months"
-  )) %>% 
+  bind_rows(
+    results[[1]]$cum_effects  ,
+    results[[2]]$cum_effects ,
+    results[[3]]$cum_effects  ,
+    results[[4]]$cum_effects
+  ) %>%   mutate(
+    time_point = case_when(
+      rn == 4 ~ "1 Month",
+      rn == 12 ~ "3 Months"
+    )) %>% 
   left_join(pct_change,by=c('topic','rn'))
 
 #ce_pre_registered %>% 
@@ -188,10 +186,10 @@ ce_fig <- ce_pre_registered %>%
     legend.position = "top"
   )
 
-ce_fig
+# ce_fig
 ggsave(filename = here(figures_dir, str_glue("pre-registered_cumulative_effects.png")), plot = ce_fig,width = 9,height = 9)
 
-  
+
 plots <- lapply(1:4, function(i) {
   results[[i]]$att_plot +
     labs(
@@ -213,7 +211,7 @@ p4 <- plots[[4]]
 combined_plot <- p1 / p3 / p2 / p4  # Stack them vertically
 
 # Display the combined plot
-print(combined_plot)
+# print(combined_plot)
 
 # Save the combined plot
 ggsave(
@@ -222,5 +220,3 @@ ggsave(
   width = 10,
   height = 15
 )
-
-
