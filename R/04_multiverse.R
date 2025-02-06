@@ -73,7 +73,7 @@ run_multisynth <- function(keyword, time_range, include_covariates, scm, fixedef
         post_treat_enforcement_date = if_else(date >= enforcement_date, 1L, 0L, 0L)
       ) %>%
       filter(time_span == time_range) %>%
-      filter(!(.[,treatment])| .[,verification_method]) %>%
+      filter(treated_state==0 | get(verification_method)==1) %>%
       distinct(state, date, .keep_all = TRUE),  # Ensure unique rows
     error = function(e) {
       message(glue("Error reading data for keyword {keyword}: {e$message}"))
@@ -162,7 +162,7 @@ plan(multisession, workers = parallel::detectCores() - 1)
 
 # Apply grid search in parallel with caching
 safe_run_multisynth <- safely(run_multisynth)
-future_pwalk(
+pwalk(
   list(
     param_grid$keyword,
     param_grid$time_range,
@@ -178,7 +178,7 @@ future_pwalk(
   .progress = TRUE 
 ) # This may hang with progress @ 100%, confirm 3457 files in the folder before terminating...
 
-example_param_grid <- param_grid %>% filter(row_number()==106L) 
+example_param_grid <- param_grid %>% filter(row_number()==3L) 
 
 results<-
 future_pwalk(
@@ -202,3 +202,4 @@ future_pwalk(
 plan(sequential)
 
 message("Multiverse models saved to: ", output_dir)
+list.files(here::here('multiverse_mod'))

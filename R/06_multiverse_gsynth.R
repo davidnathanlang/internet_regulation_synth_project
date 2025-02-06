@@ -73,14 +73,14 @@ run_gsynth <- function(params) {
     # Load and filter data
     keyword_df <- read_csv(here::here(glue("data/{keyword}.csv"))) %>%
       mutate(
-        post_treat_passage = if_else(date >= passage_date, 1L, 0L),
-        post_treat_enforcement_date = if_else(date >= enforcement_date, 1L, 0L)
+        post_treat_passage = if_else(date >= passage_date, 1L, 0L, 0L),
+        post_treat_enforcement_date = if_else(date >= enforcement_date, 1L, 0L,0L)
       ) %>%
       filter(
-        between(as.Date(date), as.Date(str_split(time_range, " ")[[1]][1]), as.Date(str_split(time_range, " ")[[1]][2]))
+        (time_span==time_range)
       ) %>%
       filter(
-        (get(treatment) == 0 | (get(verification_method) & get(treatment))) == TRUE
+        (treated_state == 0 | get(verification_method) )
       ) %>%
       distinct(state, date, .keep_all = TRUE)
     
@@ -175,3 +175,8 @@ debug_params <- list(
 )
 
 debug_result <- run_gsynth(debug_params)
+
+df<-read_csv(here::here("data/pornhub.csv"))
+
+
+df %>% distinct(state,any_id_requirement)

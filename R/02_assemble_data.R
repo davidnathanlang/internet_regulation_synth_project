@@ -30,8 +30,13 @@ df_with_imp <- df_all_raw %>%
     treated_state = if_else(!is.na(enforcement_date), 1L, 0L, 0L),
     post_treat = if_else(treated_state &
                            date > enforcement_date, 1L, 0L, 0L),
-    int_date = as.integer(date)) # typing issues with the synth_packages
+    int_date = as.integer(date)) %>%
+  mutate(across(government_id:any_id_requirement, ~ replace_na(.x, 0)))
 
+names(df_with_imp)
+df_with_imp %>%
+  group_by(state) %>%
+  summarise(across(government_id:any_id_requirement, mean, na.rm = TRUE))
 # Merge on census data ----------------------------------------------------
 
 census <- read_csv(here::here("data/census_data.csv"))
