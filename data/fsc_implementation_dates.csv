@@ -1,20 +1,20 @@
-State,Abbreviation,PassageDate,LawEffectiveDate,RDateSyntax,Enforcement_Date,government_id,digitized_id,transaction_data,database_id,any_reasonable_method,any_id_requirement
-Alabama,AL,4/24/2024,10/1/2024,"make_date(2024, 10, 1)",,0,0,0,0,1,1
-Arkansas,AR,4/11/2023,7/31/2023,"make_date(2023, 7, 31)",,1,1,0,0,1,1
-Florida,FL,3/25/2024,1/1/2025,"make_date(2025, 1, 1)",,0,0,0,0,1,1
-Georgia,GA,4/23/2024,7/1/2025,"make_date(2025, 7, 1)",,1,1,0,0,1,1
-Idaho,ID,3/14/2024,7/1/2024,"make_date(2024, 7, 1)",,1,1,1,0,0,1
-Indiana,IN,3/13/2024,8/16/2024,"make_date(2024, 7, 1)",,0,1,1,1,0,1
-Kansas,KS,4/25/2024,7/1/2024,"make_date(2024, 7, 1)",,0,0,0,1,1,1
-Kentucky,KY,4/5/2024,7/15/2024,"make_date(2024, 7, 15)",,1,0,1,0,0,1
-Louisiana,LA,6/14/2022,1/1/2023," ""make_date(2023",1,1,1,1,0,0,1
-Mississippi,MS,3/30/2023,7/1/2023,"make_date(2023, 7, 1)",,1,1,1,0,0,1
-Montana,MT,5/18/2023,1/1/2024,"make_date(2024, 1, 1)",,1,1,1,0,0,1
-Nebraska,NE,4/18/2024,7/18/2024,"make_date(2024, 7, 18)",,1,1,1,0,0,1
-North Carolina,NC,9/29/2023,1/1/2024,"make_date(2024, 1, 1)",,0,0,0,1,1,1
-Oklahoma,OK,4/26/2024,11/1/2024,"make_date(2024, 10, 1)",,0,1,1,1,0,1
-South Carolina,SC,5/21/2024,1/1/2025,"make_date(2025, 1, 1)",,0,1,1,1,0,1
-Tennessee,TN,5/28/2024,1/1/2025,"make_date(2025, 1, 1)",,1,0,1,0,0,1
-Texas,TX,6/12/2023,9/23/2023,"make_date(2024, 1, 1)",2/26/2024,1,1,1,0,0,1
-Utah,UT,3/14/2023,5/3/2023,"make_date(2023, 5, 3)",,0,1,1,1,0,1
-Virginia,VA,5/12/2023,7/1/2023,"make_date(2023, 7, 1)",,0,0,0,1,1,1
+State,Abbreviation,PassageDate,LawEffectiveDate,RDateSyntax,Enforcement_Date,government_id,digitized_id,transaction_data,database_id,any_reasonable_method,any_id_requirement,Bill Number
+Louisiana,LA,6/15/2022,1/1/2023," ""make_date(2023",1,1,1,1,0,0,1,HB 142 (2022)
+Utah,UT,3/14/2023,5/3/2023,"make_date(2023, 5, 3)",,0,1,1,1,0,1,SB 287
+Mississippi,MS,4/18/2023,7/1/2023,"make_date(2023, 7, 1)",,1,1,1,0,0,1,SB 2346
+Arkansas,AR,4/11/2023,7/31/2023,"make_date(2023, 7, 31)",,1,1,0,0,1,1,SB 66/Act 612
+Virginia,VA,5/12/2023,7/1/2023,"make_date(2023, 7, 1)",,0,0,0,1,1,1,SB 1515
+Montana,MT,5/22/2023,1/1/2024,"make_date(2024, 1, 1)",,1,1,1,0,0,1,SB 544
+Texas,TX,6/12/2023,9/19/2023,"make_date(2024, 1, 1)",2/26/2024,1,1,1,0,0,1,HB 1181
+North Carolina,NC,9/29/2023,1/1/2024,"make_date(2024, 1, 1)",,0,0,0,1,1,1,HB 8
+Indiana,IN,3/13/2024,8/16/2024,"make_date(2024, 7, 1)",,0,1,1,1,0,1,SB 17
+Idaho,ID,3/20/2024,7/1/2024,"make_date(2024, 7, 1)",,1,1,1,0,0,1,H 498
+Florida,FL,3/25/2024,1/1/2025,"make_date(2025, 1, 1)",,0,0,0,0,1,1,HB 3
+Kentucky,KY,4/5/2024,7/15/2024,"make_date(2024, 7, 15)",,1,0,1,0,0,1,HB 278
+Nebraska,NE,4/18/2024,7/18/2024,"make_date(2024, 7, 18)",,1,1,1,0,0,1,LB 1092
+Georgia,GA,4/23/2024,7/1/2025,"make_date(2025, 7, 1)",,1,1,0,0,1,1,SB 351
+Alabama,AL,4/24/2024,10/1/2024,"make_date(2024, 10, 1)",,0,0,0,0,1,1,HB 164
+Kansas,KS,4/25/2024,7/1/2024,"make_date(2024, 7, 1)",,0,0,0,1,1,1,HB2592/SB394
+Oklahoma,OK,4/26/2024,11/1/2024,"make_date(2024, 10, 1)",,0,1,1,1,0,1,SB 1959
+South Carolina,SC,5/21/2024,1/1/2025,"make_date(2025, 1, 1)",,0,1,1,1,0,1,H 3424
+Tennessee,TN,5/28/2024,1/1/2025,"make_date(2025, 1, 1)",,1,0,1,0,0,1,SB 1792
