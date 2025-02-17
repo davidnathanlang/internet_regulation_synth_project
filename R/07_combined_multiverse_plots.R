@@ -3,7 +3,11 @@ library(janitor)
 
 df1 <- read_csv(here::here("combined_multiverse/augsynth_multiverse.csv")) %>% mutate(model='augsynth') %>% clean_names() %>% filter(level=='Average')
 
-df2 <- read_csv(here::here("combined_multiverse/gsynth_results.csv")) %>% mutate(model='gsynth') %>% clean_names() %>% filter(level=='Average')
+df2 <- read_csv(here::here("combined_multiverse/gsynth_results.csv")) %>% mutate(model='gsynth') %>% clean_names() %>% filter(level=='Average') %>%
+  filter(time %in% c(1,3) & start_date=='2019-01-01'|
+         time %in% c(4,13) & start_date=='2022-01-01'
+         )
+  
 
 combined_df<-bind_rows(df1,df2)
 
