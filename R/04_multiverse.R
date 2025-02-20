@@ -35,7 +35,7 @@ n_lags_options <- c(13,4, # weekly
 
 treatment_options <- c("post_treat", "post_treat_passage", "post_treat_enforcement_date")
 
-verification_options<-c('government_id','digitized_id','transaction_data','database_id','any_reasonable_method','any_id_requirement')
+verification_options<-c('government_id','digitized_id','transaction_data','database_id','any_id_requirement')
 
 treatment<-'post_treat'
 
@@ -179,9 +179,10 @@ pwalk(
 ) # This may hang with progress @ 100%, confirm 3457 files in the folder before terminating...
 
 example_param_grid <- param_grid %>% filter(row_number()==3L) 
-
+example_param_grid <- param_grid %>% filter(verification_method=='any_reasonable_method',keyword=='pornhub',treatment=='post_treat_enforcement_date',n_leads==104L)
+example_param_grid
 results<-
-future_pwalk(
+pwalk(
   list(
     example_param_grid$keyword,
     example_param_grid$time_range,

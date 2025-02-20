@@ -23,7 +23,7 @@ treatment_options <- c("post_treat", "post_treat_passage", "post_treat_enforceme
 
 verification_options <- c(
   "government_id", "digitized_id", "transaction_data", "database_id",
-  "any_reasonable_method", "any_id_requirement"
+   "any_id_requirement"
 )
 
 force_options <- c("none", "unit", "time", "two-way")

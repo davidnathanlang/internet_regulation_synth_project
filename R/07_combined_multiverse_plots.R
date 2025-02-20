@@ -63,3 +63,22 @@ combined_df %>%
   )
 
 # ggsave(here::here('figures/combined_multiverse.png'),width = 8,height = 8)
+
+
+combined_df %>% group_by(keyword) %>% filter(treatment!='post_treat_passage') %>% summarise(min(att),max(att), n())
+
+combined_df %>% group_by(keyword,model) %>% filter(treatment!='post_treat_passage') %>% summarise(min(att),max(att), n()) %>% arrange(model)
+combined_df$model
+
+vpn<-  combined_df %>%filter(keyword=='vpn',model=='augsynth') %>% ungroup() %>% select(start_date:verification_method) 
+
+pornhub<-  combined_df %>%filter(keyword=='pornhub',model=='augsynth') %>% ungroup() %>% select(start_date:verification_method)
+
+names(vpn)
+vpn %>% semester(pornhub)
+names(pornhub)
+3456/4
+names(pornhub)
+vpn %>% anti_join(pornhub)
+combined_df %>% count(treatment)
+levels(combined_df$treatment)
