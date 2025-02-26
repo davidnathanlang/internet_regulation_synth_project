@@ -82,3 +82,24 @@ names(pornhub)
 vpn %>% anti_join(pornhub)
 combined_df %>% count(treatment)
 levels(combined_df$treatment)
+
+
+
+#H1
+combined_df %>% filter(keyword=='pornhub') %>% summarise(mean(att<=0))
+#H2
+combined_df %>% filter(keyword=='xvideos') %>% summarise(mean(att>=0))
+#H3
+combined_df %>% filter(keyword=='vpn') %>% summarise(mean(att>=0))
+#H4
+combined_df %>% filter(keyword=='porn') %>% summarise(mean(att>=0))
+
+
+#H1
+combined_df %>% filter(keyword=='pornhub')  %>% group_by(treatment) %>% summarise(mean(att<=0))
+#H2
+combined_df %>% filter(keyword=='xvideos')  %>% group_by(treatment) %>% summarise(mean(att>=0))
+#H3
+combined_df %>% filter(keyword=='vpn')  %>% group_by(treatment) %>% summarise(mean(att>=0))
+#H4
+combined_df %>% filter(keyword=='porn') %>% group_by(treatment) %>% summarise(mean(att>=0))

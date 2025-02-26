@@ -6,6 +6,8 @@ library(gsynth)
 library(tidyverse)
 library(tidylog)
 library(patchwork)
+library(xtable)
+library(kableExtra)
 pacman::p_load(geofacet)
 pacman::p_load(ggrepel)
 
@@ -54,16 +56,17 @@ hyperparameter_search <- function(keyword, time_range = '2022-01-01 2024-10-31',
   
   # Generate plots for each state and store in a list
   state_plots <- lapply(treated_states, function(state) {
+  
     thre_month_est<-cumuEff(mod,cumu = FALSE,id=state,c(0,12)) %>% as_tibble() %>% summarise(three_month_att=mean(catt)) %>% pull(three_month_att)
     plot(mod, id = state) + 
       labs(
-        x = "Time (Weeks) ",    # New x-axis label
-        y =  "ATT", # (Average Treatment Effect)",         # New y-axis label
+        x = "Time (Weeks) ",  # New x-axis label
+        y = "ATT", # (Average Treatment Effect)",     # New y-axis label
         title = str_glue("{state}") # Unique title for each plot
       ) +
       geom_hline(yintercept = thre_month_est,linetype='dashed')+
       annotate("text", x = -25, y = thre_month_est+2, label = str_c("ATT = ",round(thre_month_est,1))) +
-      theme_minimal()  # Optional: Use a clean theme
+      theme_minimal() # Optional: Use a clean theme
   })
   
   # Combine all plots into a single layout using patchwork
@@ -88,15 +91,15 @@ hyperparameter_search <- function(keyword, time_range = '2022-01-01 2024-10-31',
     facet_geo(~state) +
     labs(
       title = str_glue("{keyword}"),
-      colour = "Age Verification Status"  # Update legend title
+      colour = "Age Verification Status" # Update legend title
     ) +
     scale_colour_manual(
-      values = c("0" = "red", "1" = "blue"),  # Customize colors if desired
+      values = c("0" = "red", "1" = "blue"), # Customize colors if desired
       labels = c("0" = "Age Verification Laws Not Passed", "1" = "Age Verification Passed")
     ) +
     scale_x_date(
-      date_labels = "'%y",  # Display last two digits of the year
-      date_breaks = "1 year"  # Adjust breaks as necessary
+      date_labels = "'%y", # Display last two digits of the year
+      date_breaks = "1 year" # Adjust breaks as necessary
     ) +
     theme_minimal() + # Use a cleaner theme 
     theme(legend.position = 'bottom')
@@ -115,8 +118,8 @@ results <- lapply(keywords, function(keyword) {
 
 # Access and display results
 # lapply(results, function(res) {
-#   print(summary(res$mod))
-#   res$cum_effects
+#  print(summary(res$mod))
+#  res$cum_effects
 # })
 
 calculate_pct_change <- function(result, mod_index) {
@@ -136,11 +139,11 @@ pct_change<-bind_rows(
 
 ce_pre_registered<-
   bind_rows(
-    results[[1]]$cum_effects  ,
+    results[[1]]$cum_effects ,
     results[[2]]$cum_effects ,
-    results[[3]]$cum_effects  ,
+    results[[3]]$cum_effects ,
     results[[4]]$cum_effects
-  ) %>%   mutate(
+  ) %>%  mutate(
     time_point = case_when(
       rn == 4 ~ "1 Month",
       rn == 12 ~ "3 Months"
@@ -150,6 +153,7 @@ ce_pre_registered<-
 #ce_pre_registered %>% 
 ce_fig <- ce_pre_registered %>% 
   filter(rn %in% c(4, 12)) %>% 
+  mutate(topic = factor(topic, levels = c("pornhub", "xvideos", "vpn", "porn"))) %>%
   ggplot(aes(x = time_point, y = CATT, fill = topic)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.6,alpha=1) +
   geom_errorbar(aes(ymin = CI.lower, ymax = CI.upper), 
@@ -185,7 +189,7 @@ ce_fig <- ce_pre_registered %>%
     panel.grid.minor = element_blank(),
     legend.position = "top"
   )
-
+ce_fig
 # ce_fig
 ggsave(filename = here(figures_dir, str_glue("pre-registered_cumulative_effects.png")), plot = ce_fig,width = 9,height = 9)
 
@@ -193,11 +197,11 @@ ggsave(filename = here(figures_dir, str_glue("pre-registered_cumulative_effects.
 plots <- lapply(1:4, function(i) {
   results[[i]]$att_plot +
     labs(
-      x = "Time (Weeks) Relative to Law Passage",    # New x-axis label
-      y =  "ATT", # (Average Treatment Effect)",         # New y-axis label
+      x = "Time (Weeks) Relative to Law Passage",  # New x-axis label
+      y = "ATT", # (Average Treatment Effect)",     # New y-axis label
       title = str_glue("Estimated ATT Effect Over Time (Search Term {results[[i]]$search_term})") # Unique title for each plot
     ) +
-    theme_minimal()  # Optional: Use a clean theme
+    theme_minimal() # Optional: Use a clean theme
 })
 
 three_month_att<-plots[[1]]$data %>% filter(time>0,time<13) %>% summarise(mean(ATT)) %>% pull()
@@ -208,7 +212,7 @@ p3 <- plots[[3]]
 p4 <- plots[[4]]
 
 # Combine plots using patchwork
-combined_plot <- p1 / p3 / p2 / p4  # Stack them vertically
+combined_plot <- p1 / p3 / p2 / p4 # Stack them vertically
 
 # Display the combined plot
 # print(combined_plot)
@@ -220,3 +224,20 @@ ggsave(
   width = 10,
   height = 15
 )
+
+pre_registered_table<-ce_pre_registered%>% filter(rn==12) %>% mutate_at(c("CATT",'CI.lower','CI.upper','S.E.'), ~./13)
+
+
+pretreatment_fit<-
+  bind_rows(
+    results[[1]]$att_plot$data %>% filter(time<0) %>% summarise(pretreatment_difference=mean(abs(ATT)),topic=results[[1]]$search_term),
+    results[[2]]$att_plot$data %>% filter(time<0) %>% summarise(pretreatment_difference=mean(abs(ATT)),topic=results[[2]]$search_term),
+    results[[3]]$att_plot$data %>% filter(time<0) %>% summarise(pretreatment_difference=mean(abs(ATT)),topic=results[[3]]$search_term),
+    results[[4]]$att_plot$data %>% filter(time<0) %>% summarise(pretreatment_difference=mean(abs(ATT)),topic=results[[4]]$search_term)
+  )
+
+latex_table <- pretreatment_fit %>%
+  left_join(pre_registered_table, by = 'topic') %>%
+  select(topic, pretreatment_difference, CATT, CI.lower, CI.upper, p.value) 
+
+print(xtable(latex_table, caption = "Results Table", label = "tab:results"), include.rownames = FALSE)
