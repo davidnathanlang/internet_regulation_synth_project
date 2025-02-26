@@ -2,7 +2,7 @@
 
 This repository contains code to analyze the effects of age verification laws on internet search behavior. The analysis uses synthetic control methods to estimate treatment effects across multiple states and specifications.
 
-The Manuscript can be found at the Open Science Foundation at this URL: https://osf.io/xwpe6. 
+The Manuscript can be found at the Open Science Foundation at this URL: https://osf.io/26jq4. 
 
 ## Prerequisites
 
