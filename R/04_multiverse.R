@@ -33,7 +33,7 @@ n_lags_options <- c(13,4, # weekly
                     3,1, #monthly
                     NULL)  # Number of lags
 
-treatment_options <- c("post_treat", "post_treat_passage", "post_treat_enforcement_date")
+treatment_options <- c("post_treat", "post_treat_passage")
 
 verification_options<-c('government_id','digitized_id','transaction_data','database_id','any_id_requirement')
 
@@ -204,3 +204,4 @@ plan(sequential)
 
 message("Multiverse models saved to: ", output_dir)
 list.files(here::here('multiverse_mod'))
+param_grid %>% count(keyword)

@@ -88,11 +88,11 @@ levels(combined_df$treatment)
 #H1
 combined_df %>% filter(keyword=='pornhub') %>% summarise(mean(att<=0))
 #H2
-combined_df %>% filter(keyword=='xvideos') %>% summarise(mean(att>=0))
+combined_df %>% filter(keyword=='xvideos') %>% semi_join(pornhub) %>% summarise(mean(att>=0))
 #H3
-combined_df %>% filter(keyword=='vpn') %>% summarise(mean(att>=0))
+combined_df %>% filter(keyword=='vpn') %>% semi_join(pornhub) %>%  summarise(mean(att>=0))
 #H4
-combined_df %>% filter(keyword=='porn') %>% summarise(mean(att>=0))
+combined_df %>% filter(keyword=='porn') %>% semi_join(pornhub) %>% summarise(mean(att>=0))
 
 
 #H1
@@ -103,3 +103,5 @@ combined_df %>% filter(keyword=='xvideos')  %>% group_by(treatment) %>% summaris
 combined_df %>% filter(keyword=='vpn')  %>% group_by(treatment) %>% summarise(mean(att>=0))
 #H4
 combined_df %>% filter(keyword=='porn') %>% group_by(treatment) %>% summarise(mean(att>=0))
+
+

@@ -19,7 +19,7 @@ keywords <- c("pornhub", "xvideos", "vpn", "porn")
 
 time_ranges <- c("2019-01-01 2024-10-31", "2022-01-01 2024-10-31")
 
-treatment_options <- c("post_treat", "post_treat_passage", "post_treat_enforcement_date")
+treatment_options <- c("post_treat", "post_treat_passage")
 
 verification_options <- c(
   "government_id", "digitized_id", "transaction_data", "database_id",

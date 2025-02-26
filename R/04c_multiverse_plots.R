@@ -17,6 +17,7 @@ mm <- list.files(here::here('multiverse_tables'),full.names = T)
 
 outcomes<- map_dfr(mm,read_csv)
 
+
 outcomes %>% write_csv(here::here("combined_multiverse/augsynth_multiverse.csv"))
 
 for (state in unique(outcomes$Level)){
@@ -33,3 +34,4 @@ for (state in unique(outcomes$Level)){
   ggsave(here::here(str_glue('figures/multiverse_{state}.png')),width=9,height=9)
 
 }
+outcomes %>% filter(Level=='Average')
