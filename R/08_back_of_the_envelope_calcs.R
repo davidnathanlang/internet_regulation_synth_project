@@ -47,7 +47,8 @@ ggplot(final_df, aes(x = name, y = value, fill = title)) +
   labs(title = "Estimating The National Impact of Age Verification",
        x = "Keyword",
        y = "Google Trends",
-       fill = "Category") +
+       fill = "Category",
+       ) +
   scale_fill_manual(values = c("2022 Average" = "#1f78b4", 
                                "Estimated Impact" = "#33a02c", 
                                'Post-Verification Trends'='tan',
@@ -58,16 +59,16 @@ ggplot(final_df, aes(x = name, y = value, fill = title)) +
 
 ggsave(here::here('figures/back_of_the_envelope.png'))
 # Convert wide format to long format
-df_long <- df %>%
-  pivot_longer(cols = c(xvideos_united_states, pornhub_united_states, vpn_united_states, porn_united_states, net_effect), 
-               names_to = "category", 
-               values_to = "value") %>%
-  filter(!is.na(value)) # Remove NA values
-
-# Plot
-ggplot(df_long, aes(x = title, y = value, fill = category)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  labs(title = "Effect Comparisons", x = "Category", y = "Value") +
-  theme_minimal() +
-  scale_fill_brewer(palette = "Set2") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# df_long <- df %>%
+#   pivot_longer(cols = c(xvideos_united_states, pornhub_united_states, vpn_united_states, porn_united_states, net_effect), 
+#                names_to = "category", 
+#                values_to = "value") %>%
+#   filter(!is.na(value)) # Remove NA values
+# 
+# # Plot
+# ggplot(df_long, aes(x = title, y = value, fill = category)) +
+#   geom_bar(stat = "identity", position = "dodge") +
+#   labs(title = "Effect Comparisons", x = "Category", y = "Value") +
+#   theme_minimal() +
+#   scale_fill_brewer(palette = "Set2") +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1))
