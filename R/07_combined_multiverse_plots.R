@@ -46,8 +46,8 @@ combined_df %>%
   
   facet_wrap(~ keyword, nrow = 2) +
   scale_x_discrete(labels = c("post_treat_passage" = "Law First Passed",
-                              "post_treat" = "Law First Effective",
-                              "post_treat_enforcement_date" = "Law First Enforced")) +
+                              "post_treat" = "Law First Effective"
+                              )) +
   scale_shape_manual(values = shape_mapping, name = "Time Group") +  # Add legend
   scale_fill_manual(values = c("augsynth" = "steelblue", "gsynth" = "firebrick")) +
   xlab("Law Implementation Stage") +
@@ -62,7 +62,7 @@ combined_df %>%
     legend.position = "bottom"
   )
 
-# ggsave(here::here('figures/combined_multiverse.png'),width = 8,height = 8)
+ggsave(here::here('figures/combined_multiverse.png'),width = 8,height = 8)
 
 
 combined_df %>% group_by(keyword) %>% filter(treatment!='post_treat_passage') %>% summarise(min(att),max(att), n())
@@ -74,34 +74,25 @@ vpn<-  combined_df %>%filter(keyword=='vpn',model=='augsynth') %>% ungroup() %>%
 
 pornhub<-  combined_df %>%filter(keyword=='pornhub',model=='augsynth') %>% ungroup() %>% select(start_date:verification_method)
 
-names(vpn)
-vpn %>% semester(pornhub)
-names(pornhub)
-3456/4
-names(pornhub)
-vpn %>% anti_join(pornhub)
-combined_df %>% count(treatment)
-levels(combined_df$treatment)
+
+
+#H1
+combined_df %>% filter(keyword=='pornhub') %>% summarise(mean(att<0))
+#H2
+combined_df %>% filter(keyword=='xvideos')  %>% summarise(mean(att>0))
+#H3
+combined_df %>% filter(keyword=='vpn') %>% summarise(mean(att>0))
+#H4
+combined_df %>% filter(keyword=='porn') %>% summarise(mean(att>0))
 
 
 
 #H1
-combined_df %>% filter(keyword=='pornhub') %>% summarise(mean(att<=0))
+combined_df %>% filter(keyword=='pornhub') %>% group_by(treatment) %>% summarise(mean(att<0))
 #H2
-combined_df %>% filter(keyword=='xvideos') %>% semi_join(pornhub) %>% summarise(mean(att>=0))
+combined_df %>% filter(keyword=='xvideos')  %>% group_by(treatment) %>% summarise(mean(att>0))
 #H3
-combined_df %>% filter(keyword=='vpn') %>% semi_join(pornhub) %>%  summarise(mean(att>=0))
+combined_df %>% filter(keyword=='vpn') %>%  group_by(treatment) %>% summarise(mean(att>0))
 #H4
-combined_df %>% filter(keyword=='porn') %>% semi_join(pornhub) %>% summarise(mean(att>=0))
-
-
-#H1
-combined_df %>% filter(keyword=='pornhub')  %>% group_by(treatment) %>% summarise(mean(att<=0))
-#H2
-combined_df %>% filter(keyword=='xvideos')  %>% group_by(treatment) %>% summarise(mean(att>=0))
-#H3
-combined_df %>% filter(keyword=='vpn')  %>% group_by(treatment) %>% summarise(mean(att>=0))
-#H4
-combined_df %>% filter(keyword=='porn') %>% group_by(treatment) %>% summarise(mean(att>=0))
-
-
+combined_df %>% filter(keyword=='porn') %>% group_by(treatment) %>% summarise(mean(att>0))
+combined_df %>% count(keyword)

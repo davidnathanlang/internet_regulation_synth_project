@@ -34,4 +34,4 @@ for (state in unique(outcomes$Level)){
   ggsave(here::here(str_glue('figures/multiverse_{state}.png')),width=9,height=9)
 
 }
-outcomes %>% filter(Level=='Average')
+outcomes %>% filter(Level=='Average') %>% count(keyword)
