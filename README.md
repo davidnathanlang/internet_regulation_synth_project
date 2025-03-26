@@ -59,8 +59,8 @@ library(gtrendsR)   # v1.5.0 or higher
 2. Install RStudio (optional but recommended) from https://posit.co/download/rstudio-desktop/
 3. Clone this repository:
    ```
-   git clone https://github.com/username/age-verification-analysis.git
-   cd age-verification-analysis
+   git clone https://github.com/davidnathanlang/internet_regulation_synth_project.git
+   cd internet_regulation_synth_project
    ```
 
 4. Install required R packages:
@@ -82,6 +82,10 @@ library(gtrendsR)   # v1.5.0 or higher
    ```
 
 ## Demo
+
+### Expected Runtime
+
+If collecting the data directly from the Google Trends API, please allow for ~72 hours to retrieve all state-level time series for the search terms of interest. The multiverse analysis portion of the code should run in 1-2 hours depending on computing resources. For reference, the runtime is approximately 2 hours on an Apple M1 Max Macbook Pro with 64gb of memory.
 
 ### Running the Analysis
 
@@ -148,6 +152,20 @@ To reproduce the specific results from the paper:
 1. Ensure all dependencies are installed
 2. Run scripts 01a through 03_preregistered_hypotheses.R
 3. Compare outputs in the `figures/` directory with those in the paper
+
+### File Naming Patterns
+
+#### Data Files
+- Raw Google Trends data: `[STATE]_[KEYWORD]_[TIMESPAN].csv`
+  - Example: `CA_porn_2022-01-01 2024-10-31.csv`
+
+#### Multiverse Files
+- Multiverse models: `[KEYWORD]_[TIMERANGE]_[COVARIATES]_scm[SCM]_fixedeff[FIXEDEFF]_leads[LEADS]_lags[LAGS]_treatment_[TREATMENT]_verification_method_[METHOD].rds`
+  - Example: `pornhub_2022-01-01_2024-10-31_with_covariates_scmTRUE_fixedeffFALSE_leads52_lags13_treatment_post_treat_verification_method_government_id.rds`
+
+#### GSynth Files
+- GSynth models: `[KEYWORD]_[TIMERANGE]_treatment_[TREATMENT]_verification_[METHOD]_force_[FORCE]_estimator_[ESTIMATOR].rds`
+  - Example: `pornhub_2022-01-01_2024-10-31_treatment_post_treat_verification_government_id_force_none_estimator_ife.rds`
 
 ## Project Structure
 
@@ -231,21 +249,7 @@ To reproduce the specific results from the paper:
    - `02_assemble_data.R`: Combines all data sources
 
 2. **Initial Analysis**
-   - `03_preregistered_hypotheses.R`: Runs primary analysis
-   - `03_single_state_example.R`: Analyzes single state example
-
-3. **Multiverse Analysis**
-   - `04_multiverse.R`: Runs multiple synthetic control specifications
-   - `04b_multiverse-table_extraction.R`: Extracts results from multiverse analysis
-   - `04c_multiverse_plots.R`: Creates visualization of multiverse results
-
-4. **GSynth Analysis**
-   - `06_multiverse_gsynth.R`: Runs GSynth specifications
-   - `06b_multiverse_gsynth.R`: Processes GSynth results
-   - `06c_multiverse_gsynth_plots.R`: Creates GSynth visualizations
-
-5. **Combined Analysis**
-   - `07_combined_multiverse_plots.R`: Creates combined visualizations of all results
+   - `
 
 ## License
 
