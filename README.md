@@ -1,44 +1,153 @@
-# Age Verification Law Analysis Replication Instructions
+# Age Verification Law Analysis
 
 This repository contains code to analyze the effects of age verification laws on internet search behavior. The analysis uses synthetic control methods to estimate treatment effects across multiple states and specifications.
 
-The Manuscript can be found at the Open Science Foundation at this URL: https://osf.io/26jq4. 
+The Manuscript can be found at the Open Science Foundation at this URL: https://osf.io/26jq4.
 
-## Prerequisites
+## System Requirements
+
+### Software Dependencies
+- R version 4.1.0 or higher
+- RStudio (recommended for ease of use)
 
 ### Required R Packages
 
 ```R
 # Core packages
-library(tidyverse)
-library(tidylog)
-library(here)
-library(glue)
+library(tidyverse)  # v1.3.1 or higher
+library(tidylog)    # v1.0.2 or higher
+library(here)       # v1.0.1 or higher
+library(glue)       # v1.4.2 or higher
 
 # Data manipulation and processing
-library(janitor)
-library(vroom)
-library(furrr)
-library(unglue)
-library(lubridate)
+library(janitor)    # v2.1.0 or higher
+library(vroom)      # v1.5.7 or higher
+library(furrr)      # v0.2.3 or higher
+library(unglue)     # v0.1.0 or higher
+library(lubridate)  # v1.8.0 or higher
 
 # Synthetic control packages
-library(gsynth)
-library(augsynth)
+library(gsynth)     # v1.2.1 or higher
+library(augsynth)   # v0.1.0 or higher
 
 # Visualization
-library(patchwork)
-library(ggrepel)
-library(geofacet)
+library(patchwork)  # v1.1.1 or higher
+library(ggrepel)    # v0.9.1 or higher
+library(geofacet)   # v0.2.0 or higher
 
 # Census data
-library(tidycensus)
-library(gtrendsR)
+library(tidycensus) # v0.12.0 or higher
+library(gtrendsR)   # v1.5.0 or higher
 ```
 
-### API Keys
-- You'll need a Census API key from https://api.census.gov/data/key_signup.html
-- Create a file called `api_keys` (no extension) in the root directory with your census API key
+### Hardware Requirements
+- Standard desktop or laptop computer
+- Minimum 8GB RAM (16GB recommended for multiverse analysis)
+- At least 10GB free disk space for data and outputs
+
+### Operating Systems
+- The code has been tested on:
+  - Windows 10 and 11
+  - macOS 11 (Big Sur) and later
+  - Ubuntu 20.04 LTS and later
+
+## Installation Guide
+
+### Setting Up the Environment
+
+1. Install R (version 4.1.0 or higher) from https://cran.r-project.org/
+2. Install RStudio (optional but recommended) from https://posit.co/download/rstudio-desktop/
+3. Clone this repository:
+   ```
+   git clone https://github.com/username/age-verification-analysis.git
+   cd age-verification-analysis
+   ```
+
+4. Install required R packages:
+   ```R
+   # Run this in R or RStudio
+   install.packages(c("tidyverse", "tidylog", "here", "glue", "janitor", 
+                     "vroom", "furrr", "unglue", "lubridate", "patchwork", 
+                     "ggrepel", "geofacet", "tidycensus", "gtrendsR"))
+                     
+   # For packages not on CRAN
+   devtools::install_github("synth-inference/augsynth")
+   devtools::install_github("xuyiqing/gsynth")
+   ```
+
+5. Create an `api_keys` file (no extension) in the root directory with your Census API key:
+   ```
+   # Get your key from https://api.census.gov/data/key_signup.html
+   YOUR_CENSUS_API_KEY_HERE
+   ```
+
+## Demo
+
+### Running the Analysis
+
+1. Execute the data collection scripts:
+   ```R
+   source("scripts/01a_pull_gtrend_data.R")
+   source("scripts/01b_pull_census_data.R")
+   source("scripts/01c_scrape_implementation_dates.R")
+   source("scripts/02_assemble_data.R")
+   ```
+
+2. Run the initial analysis:
+   ```R
+   source("scripts/03_preregistered_hypotheses.R")
+   source("scripts/03_single_state_example.R")
+   ```
+
+3. Check the output in `figures/` and `tables/` directories
+
+### Expected Output
+- Data files in the `data/` directory
+- Visualization files in the `figures/` directory
+- Tables in the `tables/` directory
+
+### Expected Run Time
+- Data collection: ~30-60 minutes (depending on internet connection)
+- Initial analysis: ~10-20 minutes
+- Full multiverse analysis: ~4-8 hours (depending on hardware)
+
+## Instructions for Use
+
+### Basic Usage
+
+1. Open the project in RStudio:
+   ```
+   File > Open Project > [select the repository directory]
+   ```
+
+2. Run individual scripts from the `scripts/` folder in the order listed in "Execution Order" below
+   
+3. Alternatively, use the R console to source scripts:
+   ```R
+   source("scripts/01a_pull_gtrend_data.R")
+   ```
+
+4. View generated outputs in their respective directories
+
+### Advanced Usage
+
+To run the complete multiverse analysis:
+```R
+source("scripts/04_multiverse.R")
+source("scripts/04b_multiverse-table_extraction.R")
+source("scripts/04c_multiverse_plots.R")
+source("scripts/06_multiverse_gsynth.R")
+source("scripts/06b_multiverse_gsynth.R")
+source("scripts/06c_multiverse_gsynth_plots.R")
+source("scripts/07_combined_multiverse_plots.R")
+```
+
+### Reproducing Results
+
+To reproduce the specific results from the paper:
+1. Ensure all dependencies are installed
+2. Run scripts 01a through 03_preregistered_hypotheses.R
+3. Compare outputs in the `figures/` directory with those in the paper
 
 ## Project Structure
 
@@ -113,20 +222,6 @@ library(gtrendsR)
     └── 07_combined_multiverse_plots.R  # Combined results visualization
 ```
 
-### File Naming Patterns
-
-#### Data Files
-- Raw Google Trends data: `[STATE]_[KEYWORD]_[TIMESPAN].csv`
-  - Example: `CA_porn_2022-01-01 2024-10-31.csv`
-
-#### Multiverse Files
-- Multiverse models: `[KEYWORD]_[TIMERANGE]_[COVARIATES]_scm[SCM]_fixedeff[FIXEDEFF]_leads[LEADS]_lags[LAGS]_treatment_[TREATMENT]_verification_method_[METHOD].rds`
-  - Example: `pornhub_2022-01-01_2024-10-31_with_covariates_scmTRUE_fixedeffFALSE_leads52_lags13_treatment_post_treat_verification_method_government_id.rds`
-
-#### GSynth Files
-- GSynth models: `[KEYWORD]_[TIMERANGE]_treatment_[TREATMENT]_verification_[METHOD]_force_[FORCE]_estimator_[ESTIMATOR].rds`
-  - Example: `pornhub_2022-01-01_2024-10-31_treatment_post_treat_verification_government_id_force_none_estimator_ife.rds`
-
 ## Execution Order
 
 1. **Data Collection and Processing**
@@ -152,37 +247,35 @@ library(gtrendsR)
 5. **Combined Analysis**
    - `07_combined_multiverse_plots.R`: Creates combined visualizations of all results
 
-## Running the Analysis
+## License
 
-1. Set up your R environment and install required packages
-2. Create and populate your `api_keys` file
-3. Run scripts in the order listed above
-4. Check output directories for results
+This software is licensed under the MIT License. See LICENSE file for details.
 
-## Notes
+## Code Repository
 
-- Some scripts use parallel processing. Adjust the number of cores used based on your system capabilities
-- Large data files may be generated in the process. Ensure adequate disk space
-- Scripts contain progress indicators and will skip already-completed computations
-- The multiverse analysis may take several hours to complete depending on your system
-- `[DATE]` in filenames refers to the date the file was generated
-- `[PARAMS]` represents various parameter combinations used in the analysis
-- `[INDEX]` represents numerical indices for generated tables
-- Files marked with `[STATE]` are generated for each U.S. state in the analysis
-- `[KEYWORD]` represents one of the search terms: porn, pornhub, vpn, xvideos
+The code is available at: https://github.com/username/age-verification-analysis
+
+## Detailed Code Functionality
+
+A complete description of the code's functionality can be found in the Methods section of the manuscript, which provides pseudocode and algorithm descriptions for the synthetic control methods implemented.
+
+## Reproduction Instructions
+
+The following steps will reproduce all quantitative results presented in the manuscript:
+
+1. Set up the environment as described in the Installation Guide
+2. Run data collection scripts (01a, 01b, 01c)
+3. Run data assembly script (02)
+4. Run preregistered hypothesis testing (03)
+5. For robustness checks, run the multiverse analysis scripts (04, 06, 07)
+
+Exact results may vary slightly due to random initialization in some models, but all substantive findings should be reproducible.
 
 ## Troubleshooting
 
-- If you encounter memory issues, reduce the number of parallel workers in scripts using `furrr` or `parallel`
-- For Census API rate limits, add delays between calls
-- Check the data directories are properly created and have write permissions
+- **Memory Issues**: Reduce the number of parallel workers in scripts using `furrr` or `parallel`
+- **Census API Rate Limits**: Add delays between calls or request a higher rate limit
+- **Missing Files Error**: Ensure all directories exist and have write permissions
+- **Package Compatibility**: If you encounter package conflicts, create a dedicated R environment
 
-## Output
-
-The analysis will generate:
-- Synthetic control estimates
-- Treatment effect plots
-- Multiverse analysis results
-- Combined visualization of results across methods
-
-Results will be saved in their respective directories as specified in the directory structure.
+For additional support, please open an issue on the GitHub repository.
