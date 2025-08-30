@@ -14,17 +14,16 @@ search_terms <- c(
   "porn",
   "pornhub",
   "xvideos",
-  "vpn",
-  "onlyfans"
+  "vpn"
 )
 
-end_date <- '2024-10-31'
+end_date <- '2025-06-26'
 
 
 time_spans <- c(
   #str_glue("2023-01-01 {end_date}")
-  str_glue("2022-01-01 {end_date}")
-  #str_glue("2019-01-01 {end_date}")
+  str_glue("2022-01-01 {end_date}"),
+  str_glue("2019-01-01 {end_date}")
 )
 
 parameter_tibble <- expand_grid(terms = search_terms,
@@ -32,9 +31,9 @@ parameter_tibble <- expand_grid(terms = search_terms,
                                 times = time_spans) %>% 
   arrange(terms, state_abb, times)
 
-gtrends_call <- function(term = "VPN",
+gtrends_call <- function(term = "xvideos",
                          state = "CA",
-                         time_span = "all") {
+                         time_span = time_spans[1]) {
   
   filename <-
     here::here(str_glue("data-raw/{state}_{term}_{time_span}.csv"))
@@ -88,6 +87,11 @@ gtrends_call <- function(term = "VPN",
     
   } 
 }
-
-pwalk(parameter_tibble,  ~gtrends_call(..1, ..2, ..3))
-
+parameter_tibble <- parameter_tibble %>% arrange(desc(state_abb))
+for(i in seq_len(nrow(parameter_tibble))) {
+  term <- parameter_tibble$terms[i]
+  state <- parameter_tibble$state_abb[i]
+  times <- parameter_tibble$times[i]
+  str_c(term,state,times)
+  gtrends_call(term, state, times)
+}

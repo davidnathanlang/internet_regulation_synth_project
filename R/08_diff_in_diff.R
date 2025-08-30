@@ -25,7 +25,7 @@ seed<-12345
 inference<-'parametric'
 time_range <- '2022-01-01 2024-10-31'
 
-keyword<-'vpn'
+keyword<-'vpn' 
 for (keyword in c('pornhub','vpn','xvideos','porn'))
 {
 keyword_df <- read_csv(here::here(str_glue("data/{keyword}.csv"))) %>%
@@ -36,8 +36,9 @@ start_date<-keyword_df %>% filter(post_treat==1L) %>% group_by(state) %>% summar
 
 pte_df<-keyword_df %>% left_join(start_date) %>%
   mutate(first_treat=if_else(is.na(first_treat),as.integer(0L),as.integer(first_treat)),date=as.integer(date)) %>% left_join(state_num,by='state') %>%
-  mutate(relative_treatment_time=date-first_treat) %>%
-  filter(first_treat==0|relative_treatment_time<91)
+  mutate(relative_treatment_time=date-first_treat)# %>%
+  
+#  filter(first_treat==0|relative_treatment_time<91)
 pte_df
 pte_df
 did_res <- did::att_gt(
@@ -61,6 +62,14 @@ states_treated<-pte_df %>%
   summarise(states_concat = str_flatten(state, collapse = ", "))
 
 states_treated
+ge<-aggte(did_res,type='group',max_e = 84,na.rm=TRUE)
+ge$overall.att
+ge
+de<-aggte(did_res,type='dynamic',max_e = 84,na.rm=TRUE)
+de$overall.att
+
+summary(did_res)
+de$overall.att
 p1<-ggdid(did_res) 
 str(did_res)
 group_time_treatment<-
@@ -70,9 +79,7 @@ p1$data %>% left_join(states_treated,by=c("group"='first_treat')) %>%
   mutate(calendar_date=as.Date(as.integer(year)))
 
 group_time_treatment$relative_treatment_time
-group_time_treatment %>%  filter(relative_treatment_time>=0L & relative_treatment_time<91) %>%
-  group_by(state_date) %>%
-  summarise(mean(att))
+
 group_time_treatment %>%
   ggplot(aes(x = as.Date(as.integer(as.character(year))), y = att)) +
   geom_errorbar(aes(ymin = att - att.se * c, ymax = att + att.se * c, color = post), width = 5) +
@@ -102,7 +109,9 @@ ggsave(here::here(figures_dir,str_glue('{keyword}_grouptime.jpg')),width = 8,hei
 
 
 
-dyn_did<-aggte(did_res,type='dynamic',min_e=-Inf,max_e = 84,na.rm = TRUE) %>% ggdid()
+dyn_did<-de %>% ggdid()
+de %>% ggdid()
+de$overall.att
 dyn_did$data
 dyn_did$data$year<-dyn_did$data$year/7
 dyn_did+scale_x_continuous()
@@ -110,21 +119,21 @@ ggsave(here::here(figures_dir,str_glue('{keyword}_eventstudy.jpg')),width = 8,he
 gg_group<-aggte(did_res,type='group',min_e=-Inf,max_e=84,na.rm=TRUE)
 #ggdid(gg_group)
 
-aggte(did_res,type='group',min_e = 84,na.rm=TRUE)
+aggte(did_res,type='group',max_e = 84,na.rm=TRUE)
 aggte(did_res,type='group',na.rm=TRUE)
 
 
 pte_df %>% distinct(first_treat,state) %>%
   group_by(first_treat) %>% 
   summarise(states=reduce(state,str_c(sep=' , ')))
-gg<-ggdid(dyn_group)
+gg<-ggdid(gg_group)
 
 
-(dyn_simple<-aggte(did_res,type='simple',bstrap = TRUE,cband=TRUE,na.rm = TRUE))
+(dyn_simple<-aggte(did_res,type='group',bstrap = TRUE,cband=TRUE,na.rm = TRUE,max_e = 84))
+#(dyn_simple<-aggte(did_res,type='dynamic',bstrap = TRUE,cband=TRUE,na.rm = TRUE,max_e = 84))
 
-?aggte
 
-dyn_simple$overall.att
+
 plot_data<-gg$data %>% left_join(states_treated,by=c('year'='first_treat')) %>%
   mutate(dates_plus_states=str_c(as_date(year), states_concat))
 overall_effect<-tibble(att=dyn_simple$overall.att,att.se=dyn_simple$overall.se,c=1.96,dates_plus_states="Average")
@@ -137,6 +146,81 @@ plot_data %>%
   geom_hline(aes(yintercept = 0))+
   labs(title = keyword_df$term)
 ggsave(here::here(figures_dir,str_glue('{keyword}_state_agg.jpg')))
+
+(mod_sa<-feols(hits~sunab(first_treat, date)|state+date,data=pte_df %>% filter(relative_treatment_time<91)))
+iplot(mod_sa)
+(mod<-feols(hits~post_treat|state+date,data=pte_df))
+bake<-bacon(hits~post_treat,data=keyword_df,"state","date")
+
+summary(mod_sa,agg='att')
+summary(mod,agg='att')
+mod
+etable(mod_sa,se='hetero')
+aggregate(mod_sa, agg = "event", 
+                        periods = 0:500)
+pacman::p_load(bacondecomp)
+agg_ef
+wald()
+ggplot(bake, aes(x = weight, y = estimate, shape = type, col = type)) +
+  geom_hline(yintercept = mod$coeftable$Estimate, lty  = 2) +
+  geom_point(size = 3) +
+  labs(
+    x = "Weight", y = "Estimate", shape = "Type", col = "Type",
+    title = str_glue("Bacon-Goodman decomposition {keyword}"),
+    caption = "Note: The horizontal dotted line depicts the full TWFE estimate."
+  )
+ggsave(here::here(str_glue("did_figures/bacon_{keyword}.jpg")))
+
 }
+
+
+
+et.seed(1234)
+# load the officer data and subset it
+df <- pj_officer_level_balanced
+group_random <- sample(unique(df$assigned), 3)
+df <- df[df$assigned %in% group_random,]
+# Calculate efficient estimator for the simple weighted average
+pte_df$state
+
+tiny<-pte_df %>% filter(state %in% c("LA","CA","NY","UT")) %>% mutate(first_treat=if_else(first_treat==0L,Inf,first_treat))
+
+tiny
+staggered(df = tiny,
+          i = "state_num",
+          t = "date",
+          g = "first_treat",
+          y = "hits",
+          estimand = "simple")
+# Calculate efficient estimator for the cohort weighted average
+staggered(df = df %>% filter(state %in% c("LA","UT","CA")),
+          i = "uid",
+          t = "period",
+          g = "first_trained",
+          y = "complaints",
+          estimand = "cohort")
+# Calculate efficient estimator for the calendar weighted average
+staggered_(df = df,
+          i = "uid",
+          t = "period",
+          g = "first_trained",
+          y = "complaints",
+          estimand = "calendar")
+# Calculate event-study coefficients for the first 24 months
+# (month 0 is instantaneous effect)
+eventPlotResults <- staggered_sa(df = df,
+                              i = "uid",
+                              t = "period",
+                              g = "first_trained",
+                              y = "complaints",
+                              estimand = "cohort")
+
+staggered_sa(df = df,
+             i = "uid",
+             t = "period",
+             g = "first_trained",
+             y = "complaints",
+             estimand = "cohort")
+head(eventPlotResults)
 
 

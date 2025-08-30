@@ -2,6 +2,7 @@ library(dplyr)
 library(readr)
 library(here)
 library(glue)
+pacman::p_load(gsynth)
 library(gsynth)
 library(tidyverse)
 library(tidylog)
@@ -19,12 +20,14 @@ dir.create(models_dir, showWarnings = FALSE)
 keyword<-'pornhub'
 seed<-12345
 inference<-'parametric'
-time_range <- '2022-01-01 2024-10-31'
+time_range <- '2022-01-01 2025-06-26'
 # Hyperparameter search function
 hyperparameter_search <- function(keyword, time_range = '2022-01-01 2024-10-31', seed = 12345, inference = "parametric") {
   # Load data
   keyword_df <- read_csv(here::here(str_glue("data/{keyword}.csv"))) %>%
-    filter(time == time_range) # Adjust date range as needed
+    filter(time == time_range) %>%
+    filter(!(state %in% c("ND","MO","AZ","OH","GA")))
+  
   
   # Model fitting
   mod <- gsynth(
@@ -241,3 +244,50 @@ latex_table <- pretreatment_fit %>%
   select(topic, pretreatment_difference, CATT, CI.lower, CI.upper, p.value) 
 
 print(xtable(latex_table, caption = "Results Table", label = "tab:results"), include.rownames = FALSE)
+
+
+cat("\\begin{landscape}
+\\begin{table}[ht]
+\\centering\n")
+xtab_1<-xtable(results[[1]]$mod$wgt.implied)
+xtab_1
+results[[2]]$mod$wgt.implied %>% round(digits = 3) %>% xtable(caption='Model Weights (Gsynth)',label='vpn_weights')
+results[[3]]$mod$wgt.implied %>% round(digits = 3) %>% xtable(caption='Model Weights (Gsynth)',label='xvideos_weights',)
+results[[3]]$search_term
+oof<-results[[1]]$mod$wgt.implied  /colSums(results[[1]]$mod$wgt.implied)
+
+
+export_landscape_xtable <- function(data, filename = "table.tex",
+                                    caption = "Your Caption",
+                                    label = "your_label",
+                                    digits = NULL,
+                                    align = NULL) {
+  # Create xtable object
+  xtab <- xtable(data, caption = caption, label = label, digits = digits, align = align)
+  
+  # Capture the table body
+  tab_lines <- capture.output(
+    print(xtab,
+          include.rownames = TRUE,
+          floating = FALSE,
+          tabular.environment = "tabular",
+          hline.after = c(-1, 0, nrow(data)))
+  )
+  
+  # Combine with LaTeX wrappers
+  full_table <- c(
+    "\\begin{landscape}",
+    "\\begin{table}[ht]",
+    "\\centering",
+    "\\resizebox{\\textwidth}{!}{%",
+    tab_lines,
+    "}",
+    paste0("\\caption{", caption, "}"),
+    paste0("\\label{", label, "}"),
+    "\\end{table}",
+    "\\end{landscape}"
+  )
+  
+  # Write to file
+  writeLines(full_table, filename)
+}
