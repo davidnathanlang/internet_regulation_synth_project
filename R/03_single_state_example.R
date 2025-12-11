@@ -77,11 +77,11 @@ m3 <- summary(mod_vpn, inf_type = 'jackknife')
 m4 <- summary(mod_porn, inf_type = 'jackknife')
 
 # Extract conformal inference p-values
-m1_conf <- summary(mod_pornhub, inf_type = 'conformal')$average_att$p_val
-m2_conf <- summary(mod_xvideos, inf_type = 'conformal')$average_att$p_val
-m3_conf <- summary(mod_vpn, inf_type = 'conformal')$average_att$p_val
-m4_conf <- summary(mod_porn, inf_type = 'conformal')$average_att$p_val
-
+m1_conf <- summary(mod_pornhub, inf_type = 'conformal')
+m2_conf <- summary(mod_xvideos, inf_type = 'conformal')
+m3_conf <- summary(mod_vpn, inf_type = 'conformal')
+m4_conf <- summary(mod_porn, inf_type = 'conformal')
+?gsynth
 # GSynth models
 gsynth_mod1 <- gsynth(pornhub ~ post_treat, data = keyword_df, index = c("state", "int_date"), se = TRUE, seed = 12345, force = 'none', inference = 'parametric')
 gsynth_mod2 <- gsynth(xvideos ~ post_treat, data = keyword_df, index = c("state", "int_date"), se = TRUE, seed = 12345, force = 'none', inference = 'parametric')
@@ -107,6 +107,10 @@ extract_gsynth_att <- function(gsynth_model) {
   data.frame(Estimate = att_avg, SE = se, CI_Lower = ci_lower, CI_Upper = ci_upper, P_Value = p_value)
 }
 
+m1_conf$average_att
+m2_conf$average_att
+m3_conf$average_att
+m4_conf$average_att
 # Combine results
 results <- bind_rows(
   bind_cols(m1$average_att %>% mutate(search_term = 'pornhub'), m1_conf, extract_gsynth_att(gsynth_mod1)),
@@ -175,9 +179,19 @@ run_permutation_test <- function(search_term) {
   
   permutation_test <- function(s) {
     # Create a permuted panel with modified post-treatment indicator
-    permute_panel <- keyword_df %>%
-      mutate(permute_post = if_else(state == s & date >= make_date(2023, 1, 1), 1L, 0L))
     
+    if (s == "LA") {
+    permute_panel <- 
+    
+      keyword_df %>%
+      mutate(permute_post = if_else(state == s & date >= make_date(2023, 1, 1), 1L, 0L))
+      }
+    else{
+      permute_panel <-
+      keyword_df %>%
+        mutate(permute_post = if_else(state == s & date >= make_date(2023, 1, 1), 1L, 0L)) %>% filter(state!="LA")
+      
+    }
     # Run Augsynth model dynamically using the search term
     formula <- as.formula(paste0(search_term, " ~ permute_post"))
     permute_est <- augsynth(
@@ -242,6 +256,7 @@ run_permutation_test <- function(search_term) {
 
 # Example: Run the function for "pornhub"
 inference_pornhub <- run_permutation_test("pornhub")
+
 inference_porn <- run_permutation_test("porn")
 inference_xvideos <- run_permutation_test("xvideos")
 inference_vpn <- run_permutation_test("vpn")
