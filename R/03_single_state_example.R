@@ -11,7 +11,7 @@ library(pacman)
 library(janitor)
 library(xtable)
 pacman::p_load(patchwork, gghighlight, ggrepel,kableExtra)
-
+not_yet_treated_states<-read_csv(here::here("data/fsc_implementation_dates.csv")) %>% transmute(state=Abbreviation) %>% filter(state!="LA") %>%pull(state)
 if (!file.exists("tables")) {
   # Create the "tables" folder if it doesn't exist
   dir.create("tables")
@@ -175,7 +175,7 @@ latex_table
 
 
 # Function to perform permutation test for a given state
-run_permutation_test <- function(search_term) {
+run_permutation_test <- function(search_term,drop_not_yet_treated=0,states_to_drop=not_yet_treated_states) {
   
   permutation_test <- function(s) {
     # Create a permuted panel with modified post-treatment indicator
@@ -191,6 +191,9 @@ run_permutation_test <- function(search_term) {
       keyword_df %>%
         mutate(permute_post = if_else(state == s & date >= make_date(2023, 1, 1), 1L, 0L)) %>% filter(state!="LA")
       
+    }
+    if (drop_not_yet_treated==1){
+      permute_panel <- permute_panel %>% filter( !(state %in% states_to_drop ))
     }
     # Run Augsynth model dynamically using the search term
     formula <- as.formula(paste0(search_term, " ~ permute_post"))
@@ -209,7 +212,14 @@ run_permutation_test <- function(search_term) {
   }
   
   # Run permutation tests for all donor states
+  if (drop_not_yet_treated)
+  {
+  donor_states_list<- setdiff(unique(keyword_df$state),(not_yet_treated_states))
+  }
+  else
+  {
   donor_states_list <- unique(keyword_df$state) 
+  }
   permute_aug_synth <- map_dfr(donor_states_list, permutation_test)
   
   # Compute pre-treatment MSPE
@@ -263,6 +273,8 @@ inference_vpn <- run_permutation_test("vpn")
 
 
 
+
+
 p2<-
   (inference_pornhub$plt +inference_xvideos$plt)/
 (inference_vpn$plt + inference_porn$plt)
@@ -271,4 +283,18 @@ p2<-
  ggsave(here::here("figures/MSPE_Panel.png"), plot = p2, height = 20, width = 10)
  
 
-              
+ 
+ inference_pornhub_never_treat <- run_permutation_test("pornhub",drop_not_yet_treated = 1)
+ inference_porn_never_treat <- run_permutation_test("porn",drop_not_yet_treated = 1)
+ inference_xvideos_never_treat <- run_permutation_test("xvideos",drop_not_yet_treated = 1)
+ inference_vpn_never_treat <- run_permutation_test("vpn",drop_not_yet_treated = 1)
+ 
+
+ 
+ p2_never_treat<-
+   (inference_pornhub_never_treat$plt +inference_xvideos_never_treat$plt)/
+   (inference_vpn_never_treat$plt + inference_porn_never_treat$plt)
+ 
+ 
+ ggsave(here::here("figures/MSPE_Panel_never_treat.png"), plot = p2_never_treat, height =20,width=10) 
+p2_never_treat        
