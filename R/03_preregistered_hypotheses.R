@@ -20,13 +20,12 @@ dir.create(models_dir, showWarnings = FALSE)
 keyword<-'pornhub'
 seed<-12345
 inference<-'parametric'
-time_range <- '2022-01-01 2025-06-26'
+time_range <- '2022-01-01 2024-10-31'
 # Hyperparameter search function
 hyperparameter_search <- function(keyword, time_range = '2022-01-01 2024-10-31', seed = 12345, inference = "parametric") {
   # Load data
   keyword_df <- read_csv(here::here(str_glue("data/{keyword}.csv"))) %>%
-    filter(time == time_range) %>%
-    filter(!(state %in% c("ND","MO","AZ","OH","GA")))
+    filter(time == time_range) 
   
   
   # Model fitting
@@ -291,3 +290,40 @@ export_landscape_xtable <- function(data, filename = "table.tex",
   # Write to file
   writeLines(full_table, filename)
 }
+
+
+individual_states <- c("AL","AR","ID","IN","KS","KY","LA","MS","MT","NC","NE","TX","UT","VA")
+
+plot_data_all <- purrr::map_dfr(seq_along(results), function(i) {
+  mod <- results[[i]]$mod
+  term<- results[[i]]$search_term
+  
+  purrr::map_dfr(individual_states, function(st) {
+    p <- plot(mod, id = st)
+    
+    tibble::as_tibble(p$data) %>%
+      dplyr::mutate(
+        state = st,
+        keyword  =term ,
+        .before = 1
+      )
+  })
+})
+
+
+
+pre_fit_aug <- plot_data_all %>%
+  filter(time < 0) %>%
+  group_by(state, keyword) %>%
+  summarise(
+    MAE = mean(abs(ATT), na.rm = TRUE),
+    n_pre = sum(!is.na(ATT)),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    id_cols = state,
+    names_from = keyword,
+    values_from = c(MAE,  n_pre)
+)
+
+pre_fit_aug
