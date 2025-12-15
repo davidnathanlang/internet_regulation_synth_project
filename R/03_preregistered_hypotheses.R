@@ -326,4 +326,55 @@ pre_fit_aug <- plot_data_all %>%
     values_from = c(MAE,  n_pre)
 )
 
-pre_fit_aug
+
+# Packages
+library(dplyr)
+library(knitr)
+library(kableExtra)
+
+# Drop redundant n_pre variables and keep one
+pre_fit_aug_clean <- pre_fit_aug %>%
+  select(
+    state,
+    MAE_porn,
+    MAE_pornhub,
+    MAE_vpn,
+    MAE_xvideos,
+    n_pre = n_pre_porn
+  ) %>%
+  rename(
+    State = state,
+    `MAE (Porn)` = MAE_porn,
+    `MAE (Pornhub)` = MAE_pornhub,
+    `MAE (VPN)` = MAE_vpn,
+    `MAE (XVideos)` = MAE_xvideos,
+    `Pre-period N` = n_pre
+  )
+
+state_avg <- pre_fit_aug_clean %>%
+  summarise(
+    State = "Macro-level State Average",
+    across(
+      starts_with("MAE"),
+      ~ mean(.x, na.rm = TRUE)
+    )
+  )
+
+# Create LaTeX table with horizontal rules every 5 rows
+kable(
+  bind_rows(pre_fit_aug_clean,state_avg),
+  format = "latex",
+  booktabs = TRUE,
+  digits = 2,
+caption = "Pre-fit Mean Absolute Error by State and Series\\label{tab:prefit_mae}",
+) %>%
+  kable_styling(
+    latex_options = "hold_position",
+    font_size = 11
+  ) %>%
+  row_spec(
+    c(5,10,14),
+    hline_after = TRUE
+  )
+
+
