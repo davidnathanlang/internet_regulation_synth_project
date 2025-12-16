@@ -11,7 +11,7 @@ library(xtable)
 library(kableExtra)
 pacman::p_load(geofacet)
 pacman::p_load(ggrepel)
-
+weeks_in_three_months<-13
 # Create directories for saving outputs
 figures_dir <- here("figures")
 models_dir <- here("mods")
@@ -44,7 +44,7 @@ hyperparameter_search <- function(keyword, time_range = '2022-01-01 2024-10-31',
   ce_effects
   # Save model output
   saveRDS(mod, file = here(models_dir, str_glue("{keyword}_model.rds")))
-  three_month_att<- ce_effects %>% filter(rn+1==13) %>% transmute(ATT=CATT/13) %>% pull()
+  three_month_att<- ce_effects %>% filter(rn+1==weeks_in_three_months) %>% transmute(ATT=CATT/weeks_in_three_months) %>% pull()
   
   # Generate plots
   att_plot <- plot(mod) + labs(title = str_glue("{keyword} ATT")) +
@@ -58,17 +58,42 @@ hyperparameter_search <- function(keyword, time_range = '2022-01-01 2024-10-31',
   
   # Generate plots for each state and store in a list
   state_plots <- lapply(treated_states, function(state) {
-  
-    thre_month_est<-cumuEff(mod,cumu = FALSE,id=state,c(0,12)) %>% as_tibble() %>% summarise(three_month_att=mean(catt)) %>% pull(three_month_att)
-    plot(mod, id = state) + 
+    
+    three_month <- cumuEff(mod, cumu = TRUE, id = state, c(0, 12))$est.catt %>%
+      as_tibble() %>%
+      mutate(
+        three_month_att = CATT / weeks_in_three_months,
+        SE = round(`S.E.` / weeks_in_three_months, 1)
+      ) %>%
+      slice_tail(n = 1)
+    
+    att <- three_month$three_month_att
+    se  <- three_month$SE
+    
+    label_txt <- str_c(
+      "ATT = ",
+      round(att, 1),
+      " (",
+      se,
+      ")"
+    )
+    
+    plot(mod, id = state) +
       labs(
-        x = "Time (Weeks) ",  # New x-axis label
-        y = "ATT", # (Average Treatment Effect)",     # New y-axis label
-        title = str_glue("{state}") # Unique title for each plot
+        x = "Time (Weeks)",
+        y = "ATT",
+        title = str_glue("{state}")
       ) +
-      geom_hline(yintercept = thre_month_est,linetype='dashed')+
-      annotate("text", x = -25, y = thre_month_est+2, label = str_c("ATT = ",round(thre_month_est,1))) +
-      theme_minimal() # Optional: Use a clean theme
+      geom_hline(yintercept = att, linetype = "dashed") +
+      geom_label(
+        data = data.frame(x = -Inf, y = att, label = label_txt),
+        aes(x = x, y = y, label = label),
+        inherit.aes = FALSE,
+        hjust = -0.05,
+        fill = scales::alpha("white", 0.7),
+        label.size = 0
+      ) +
+      theme_minimal()
   })
   
   # Combine all plots into a single layout using patchwork
@@ -206,7 +231,7 @@ plots <- lapply(1:4, function(i) {
     theme_minimal() # Optional: Use a clean theme
 })
 
-three_month_att<-plots[[1]]$data %>% filter(time>0,time<13) %>% summarise(mean(ATT)) %>% pull()
+three_month_att<-plots[[1]]$data %>% filter(time>0,time<weeks_in_three_months) %>% summarise(mean(ATT)) %>% pull()
 # Assign individual plots for reference
 p1 <- plots[[1]] 
 p2 <- plots[[2]]
@@ -227,7 +252,7 @@ ggsave(
   height = 15
 )
 
-pre_registered_table<-ce_pre_registered%>% filter(rn==12) %>% mutate_at(c("CATT",'CI.lower','CI.upper','S.E.'), ~./13)
+pre_registered_table<-ce_pre_registered%>% filter(rn==12) %>% mutate_at(c("CATT",'CI.lower','CI.upper','S.E.'), ~./weeks_in_three_months)
 
 
 pretreatment_fit<-
@@ -376,5 +401,7 @@ caption = "Pre-fit Mean Absolute Error by State and Series\\label{tab:prefit_mae
     c(5,10,14),
     hline_after = TRUE
   )
+
+
 
 
